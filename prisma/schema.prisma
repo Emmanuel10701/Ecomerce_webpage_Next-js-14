@@ -1,5 +1,3 @@
-// schema.prisma
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,6 +5,12 @@ generator client {
 datasource db {
   provider = "mongodb"
   url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  STAFF
+  ADMIN
 }
 
 model User {
@@ -20,6 +24,26 @@ model User {
   image          String?
   accounts       Account[]
   passwordResets PasswordReset[]
+  role           Role            @default(STAFF) // Set default role to STAFF
+}
+
+model Customer {
+  id          String        @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  email       String        @unique
+  phoneNumber String?
+  address     String
+  userId      String        @db.ObjectId
+  role        Role          @default(USER) // Default role for Customer is USER
+  orders      Order[]       // Add this line to define the relation
+}
+
+model Subscriber {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  email     String   @unique
+  createdAt DateTime @default(now())
+  userId    String   @db.ObjectId
+  role      Role     @default(USER) // Default role for Subscriber is USER
 }
 
 model Account {
@@ -48,6 +72,7 @@ model PasswordReset {
   userId String   @db.ObjectId
   user   User     @relation(fields: [userId], references: [id])
 }
+
 model Product {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   name        String
@@ -61,17 +86,28 @@ model Product {
   category    String?  // Ensure this matches your code
 }
 
-
-model Customer {
-  id          String  @id @default(auto()) @map("_id") @db.ObjectId
-  name        String
-  email       String  @unique
-  phoneNumber String?
-  address     String
+model Order {
+  id          String        @id @default(auto()) @map("_id") @db.ObjectId
+  customerId  String        @db.ObjectId
+  status      OrderStatus  @default(PENDING)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  customer    Customer     @relation(fields: [customerId], references: [id]) // Define the relation
+  items       OrderItem[]  // Relation to OrderItem
 }
 
-model Subscriber {
+model OrderItem {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  email     String   @unique
-  createdAt DateTime @default(now())
+  orderId   String   @db.ObjectId
+  productId String   @db.ObjectId
+  quantity  Int
+  price     Float
+  order     Order    @relation(fields: [orderId], references: [id])
+  product   Product  @relation(fields: [id], references: [id]) // Define the relation
+}
+
+enum OrderStatus {
+  DELIVERED
+  PENDING
+  PAID
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { FaTimes, FaShoppingCart } from 'react-icons/fa';
+import { FaTimes } from 'react-icons/fa';
 import { useCart } from '../../context/page'; // Adjust the path if necessary
 import { useRouter } from 'next/navigation';
 
@@ -30,7 +30,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onFilterChange, isOpen, setIsOpen }) 
     }
   });
 
-  const [isCartDropdownOpen, setIsCartDropdownOpen] = useState<boolean>(false);
+  const [isCartDropdownOpen, setIsCartDropdownOpen] = useState<boolean>(true); // Start open to render at the bottom
   const { state: cartState } = useCart();
   const router = useRouter();
   const sidebarRef = useRef<HTMLDivElement>(null);
@@ -72,16 +72,6 @@ const Sidebar: React.FC<SidebarProps> = ({ onFilterChange, isOpen, setIsOpen }) 
     });
   };
 
-  const handleCategoryChange = (category: Category) => {
-    setFilterState(prevState => {
-      const newCategorys = { ...prevState.categorys, [category]: !prevState.categorys[category] };
-      const newFilterState = { ...prevState, categorys: newCategorys };
-      onFilterChange(newFilterState);
-      // Do not close the sidebar for category filter changes
-      return newFilterState;
-    });
-  };
-
   const cartNavigation = () => {
     setIsCartDropdownOpen(false);
     router.push("/Cartpage");
@@ -107,25 +97,6 @@ const Sidebar: React.FC<SidebarProps> = ({ onFilterChange, isOpen, setIsOpen }) 
       <button onClick={() => setIsOpen(false)} className="absolute top-4 right-4 text-gray-600">
         <FaTimes size={24} />
       </button>
-
-      {/* Centered Cart Icon */}
-      <div className="flex flex-col items-center mb-4">
-        <button onClick={() => setIsCartDropdownOpen(!isCartDropdownOpen)} className="relative p-1.5 bg-slate-300 cursor-pointer rounded-full">
-          <FaShoppingCart size={24} className="text-gray-600" />
-          {totalItems > 0 && (
-            <span className="absolute -top-1.5 -right-1 flex items-center justify-center w-4 h-4 text-xs text-white bg-red-600 rounded-full">{totalItems}</span>
-          )}
-        </button>
-        {isCartDropdownOpen && (
-          <div ref={cartDropdownRef} className="absolute z-10 mt-5 w-52 bg-white border border-gray-200 shadow-lg">
-            <div className="p-4 rounded-lg">
-              <span className="text-lg font-bold">{totalItems} Items</span>
-              <span className="block text-sm text-gray-600">Subtotal: KSH {totalPrice.toFixed(2)}</span>
-              <button className="mt-2 w-full py-1 px-2 bg-blue-500 text-white rounded" onClick={cartNavigation}>View cart</button>
-            </div>
-          </div>
-        )}
-      </div>
 
       <div className="flex flex-col space-y-4">
         <div className="space-y-2 flex-col mt-8">
@@ -188,23 +159,18 @@ const Sidebar: React.FC<SidebarProps> = ({ onFilterChange, isOpen, setIsOpen }) 
             </label>
           </div>
         </div>
+      </div>
 
-        <div className="space-y-2 flex-col mt-4">
-          <h2 className="text-lg mb-2 text-purple-800 font-bold">Categories</h2>
-          {Object.keys(filterState.categorys).map(category => (
-            <div className='flex flex-col' key={category}>
-              <label className="inline-flex items-center">
-                <input
-                  type="checkbox"
-                  name={category}
-                  checked={filterState.categorys[category as Category]}
-                  onChange={() => handleCategoryChange(category as Category)}
-                  className="form-checkbox"
-                />
-                <span className="ml-2 text-slate-400 font-semibold">{category}</span>
-              </label>
+      {/* Cart Dropdown Box at the Bottom */}
+      <div className="absolute bottom-4 left-0 right-0">
+        <div ref={cartDropdownRef} className="card card-compact dropdown-content bg-base-100 z-[1] mt-3 w-52 shadow">
+          <div className="card-body">
+            <span className="text-lg font-bold">My cart</span>
+            <span className="text-info">Subtotal: KSH {totalPrice.toFixed(2)}</span>
+            <div className="card-actions">
+              <button className="btn btn-primary btn-block" onClick={cartNavigation}>View cart</button>
             </div>
-          ))}
+          </div>
         </div>
       </div>
     </div>
