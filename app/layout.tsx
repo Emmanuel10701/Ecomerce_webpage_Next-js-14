@@ -1,0 +1,50 @@
+"use client";
+
+import { Inter } from "next/font/google";
+import "./globals.css";
+import Navbar from "./Navbar/page";
+import Footer from "./Footer/page";
+import { Provider } from "./provider";
+import { CartProvider } from '../context/page';
+import { usePathname } from 'next/navigation';
+
+const inter = Inter({ subsets: ["latin"] });
+
+const handleSearch = (query: string) => {
+  console.log("Search query:", query);
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  const pathname = usePathname();
+  const isAnalyticsPage = pathname.startsWith('/analytics');
+  const isUserPage = pathname.startsWith('/users');
+  const isWorkersPage = pathname.startsWith('/workers'); // Add this line
+  const isCalender = pathname.startsWith('/calender'); // Add this line
+  const isLogin = pathname.startsWith('/login'); // Add this line
+  const isRegister = pathname.startsWith('/register'); // Add this line
+  const subscribers = pathname.startsWith('/subscibers'); // Add this line
+  const isNotfound = pathname.startsWith('/not-found'); // Add this line
+  const listpage = pathname.startsWith('/productstable'); // Add this line
+  const allProducts = pathname.startsWith('/Productslistpage'); // Add this line
+  const isExcludedPage = isAnalyticsPage ||isNotfound||allProducts||listpage||subscribers|| isUserPage ||isRegister|| isWorkersPage||isLogin ||isCalender|| pathname.startsWith('/maindata');
+
+  return (
+    <html lang="en">
+      <body className={inter.className}>
+        <Provider>
+          <CartProvider>
+            {!isExcludedPage && <Navbar onSearch={handleSearch} />}
+            <main className="main-content">
+              {children}
+            </main>
+            {!isExcludedPage && <Footer />}
+          </CartProvider>
+        </Provider>
+      </body>
+    </html>
+  );
+}

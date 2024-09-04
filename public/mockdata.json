@@ -1,0 +1,302 @@
+[
+  {
+    "id": 1,
+    "title": "Smartphone",
+    "description": "Latest model with high-end features.",
+    "price": 699,
+    "oldPrice": 799,
+    "imageUrl": "/images/smartphone.jpg",
+    "rating": 4.5,
+    "category": "Electronics"
+  },
+  {
+    "id": 2,
+    "title": "Blender",
+    "description": "High-speed blender for all your kitchen needs.",
+    "price": 99,
+    "oldPrice": 129,
+    "imageUrl": "/images/blender.jpg",
+    "rating": 4.0,
+    "category": "Home Appliances"
+  },
+  {
+    "id": 3,
+    "title": "Winter Jacket",
+    "description": "Warm and stylish winter jacket.",
+    "price": 120,
+    "oldPrice": 150,
+    "imageUrl": "/images/jacket.jpg",
+    "rating": 4.8,
+    "category": "Fashion"
+  },
+  {
+    "id": 4,
+    "title": "Children's Book",
+    "description": "Engaging book for children aged 6-10.",
+    "price": 15,
+    "oldPrice": 20,
+    "imageUrl": "/images/book.jpg",
+    "rating": 4.2,
+    "category": "Books & Media"
+  },
+  {
+    "id": 5,
+    "title": "Toy Car",
+    "description": "Durable toy car for kids.",
+    "price": 30,
+    "oldPrice": 40,
+    "imageUrl": "/images/toy-car.jpg",
+    "rating": 4.6,
+    "category": "Kids"
+  },
+  {
+    "id": 6,
+    "title": "Headphones",
+    "description": "Noise-cancelling headphones with excellent sound quality.",
+    "price": 150,
+    "oldPrice": 200,
+    "imageUrl": "/images/headphones.jpg",
+    "rating": 4.7,
+    "category": "Electronics"
+  },
+  {
+    "id": 7,
+    "title": "Vacuum Cleaner",
+    "description": "Powerful vacuum cleaner for all surfaces.",
+    "price": 220,
+    "oldPrice": 250,
+    "imageUrl": "/images/vacuum.jpg",
+    "rating": 4.4,
+    "category": "Home Appliances"
+  },
+  {
+    "id": 8,
+    "title": "Sunglasses",
+    "description": "Stylish sunglasses for summer.",
+    "price": 50,
+    "oldPrice": 70,
+    "imageUrl": "/images/sunglasses.jpg",
+    "rating": 4.3,
+    "category": "Fashion"
+  },
+  {
+    "id": 9,
+    "title": "Laptop",
+    "description": "High-performance laptop for work and play.",
+    "price": 1200,
+    "oldPrice": 1400,
+    "imageUrl": "/images/laptop.jpg",
+    "rating": 4.6,
+    "category": "Electronics"
+  },
+  {
+    "id": 10,
+    "title": "Science Fiction Novel",
+    "description": "Exciting science fiction novel by a renowned author.",
+    "price": 25,
+    "oldPrice": 30,
+    "imageUrl": "/images/scifi-novel.jpg",
+    "rating": 4.9,
+    "category": "Books & Media"
+  },
+  {
+    "id": 11,
+    "title": "Puzzles",
+    "description": "Fun puzzles for kids and adults.",
+    "price": 20,
+    "oldPrice": 25,
+    "imageUrl": "/images/puzzles.jpg",
+    "rating": 4.5,
+    "category": "Kids"
+  },
+  {
+    "id": 12,
+    "title": "Air Fryer",
+    "description": "Healthy cooking with less oil.",
+    "price": 130,
+    "oldPrice": 160,
+    "imageUrl": "/images/air-fryer.jpg",
+    "rating": 4.6,
+    "category": "Home Appliances"
+  },
+  {
+  "id": 13,
+    "title": "Smart Watch",
+    "description": "Track your fitness and stay connected.",
+    "price": 250,
+    "oldPrice": 300,
+    "imageUrl": "/images/smart-watch.jpg",
+    "rating": 4.8,
+    "category": "Electronics"
+  },
+  {
+    "id": 14,
+    "title": "Coffee Maker",
+    "description": "Brews perfect coffee every time.",
+    "price": 80,
+    "oldPrice": 100,
+    "imageUrl": "/images/coffee-maker.jpg",
+    "rating": 4.3,
+    "category": "Home Appliances"
+  },
+  {
+    "id": 15,
+    "title": "Leather Wallet",
+    "description": "Elegant and durable leather wallet.",
+    "price": 60,
+    "oldPrice": 80,
+    "imageUrl": "/images/wallet.jpg",
+    "rating": 4.7,
+    "category": "Fashion"
+  },
+  {
+    "id": 16,
+    "title": "Kids' Bike",
+    "description": "Safe and fun bike for children.",
+    "price": 180,
+    "oldPrice": 220,
+    "imageUrl": "/images/kids-bike.jpg",
+    "rating": 4.5,
+    "category": "Kids"
+  },
+  {
+    "id": 17,
+    "title": "Bluetooth Speaker",
+    "description": "Portable speaker with great sound quality.",
+    "price": 70,
+    "oldPrice": 90,
+    "imageUrl": "/images/bluetooth-speaker.jpg",
+    "rating": 4.6,
+    "category": "Electronics"
+  },
+  {
+    "id": 18,
+    "title": "Electric Kettle",
+    "description": "Fast boiling electric kettle.",
+    "price": 40,
+    "oldPrice": 50,
+    "imageUrl": "/images/electric-kettle.jpg",
+    "rating": 4.4,
+    "category": "Home Appliances"
+  },
+  {
+    "id": 19,
+    "title": "Designer Dress",
+    "description": "Elegant dress for special occasions.",
+    "price": 250,
+    "oldPrice": 300,
+    "imageUrl": "/images/designer-dress.jpg",
+    "rating": 4.9,
+    "category": "Fashion"
+  },
+  {
+    "id": 20,
+    "title": "Educational Toys",
+    "description": "Toys that promote learning and development.",
+    "price": 35,
+    "oldPrice": 45,
+    "imageUrl": "/images/educational-toys.jpg",
+    "rating": 4.7,
+    "category": "Kids"
+  },
+  {
+    "id": 21,
+    "title": "Digital Camera",
+    "description": "Capture high-quality images and videos.",
+    "price": 800,
+    "oldPrice": 1000,
+    "imageUrl": "/images/digital-camera.jpg",
+    "rating": 4.5,
+    "category": "Electronics"
+  },
+  {
+    "id": 22,
+    "title": "Air Purifier",
+    "description": "Clean air for a healthier environment.",
+    "price": 150,
+    "oldPrice": 180,
+    "imageUrl": "/images/air-purifier.jpg",
+    "rating": 4.6,
+    "category": "Home Appliances"
+  },
+  {
+    "id": 23,
+    "title": "Watch",
+    "description": "Stylish wristwatch with multiple features.",
+    "price": 120,
+    "oldPrice": 150,
+    "imageUrl": "/images/watch.jpg",
+    "rating": 4.4,
+    "category": "Fashion"
+  },
+  {
+    "id": 24,
+    "title": "Building Blocks",
+    "description": "Creative building blocks for kids.",
+    "price": 25,
+    "oldPrice": 30,
+    "imageUrl": "/images/building-blocks.jpg",
+    "rating": 4.8,
+    "category": "Kids"
+  },
+  {
+    "id": 25,
+    "title": "Camera Lens",
+    "description": "High-quality lens for your camera.",
+    "price": 300,
+    "oldPrice": 350,
+    "imageUrl": "/images/camera-lens.jpg",
+    "rating": 4.7,
+    "category": "Electronics"
+  },
+  {
+    "id": 26,
+    "title": "Pressure Cooker",
+    "description": "Cook meals quickly and efficiently.",
+    "price": 70,
+    "oldPrice": 90,
+    "imageUrl": "/images/pressure-cooker.jpg",
+    "rating": 4.5,
+    "category": "Home Appliances"
+  },
+  {
+    "id": 27,
+    "title": "Winter Boots",
+    "description": "Warm and waterproof winter boots.",
+    "price": 150,
+    "oldPrice": 180,
+    "imageUrl": "/images/winter-boots.jpg",
+    "rating": 4.6,
+    "category": "Fashion"
+  },
+  {
+    "id": 28,
+    "title": "Kids' Puzzle Set",
+    "description": "Colorful and educational puzzle set for children.",
+    "price": 22,
+    "oldPrice": 28,
+    "imageUrl": "/images/kids-puzzle.jpg",
+    "rating": 4.7,
+    "category": "Kids"
+  },
+  {
+    "id": 29,
+    "title": "Electric Toothbrush",
+    "description": "Advanced toothbrush with multiple brushing modes.",
+    "price": 90,
+    "oldPrice": 110,
+    "imageUrl": "/images/electric-toothbrush.jpg",
+    "rating": 4.5,
+    "category": "Home Appliances"
+  },
+  {
+    "id": 30,
+    "title": "Travel Backpack",
+    "description": "Spacious and durable backpack for travel.",
+    "price": 85,
+    "oldPrice": 110,
+    "imageUrl": "/images/travel-backpack.jpg",
+    "rating": 4.8,
+    "category": "Fashion"
+  }
+]
