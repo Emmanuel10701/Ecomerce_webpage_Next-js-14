@@ -47,7 +47,7 @@ const SubscribersPage: React.FC = () => {
       setLoading(false);
     } catch (error) {
       console.error(error);
-      toast.error('Failed to fetch users.');
+      toast.error('Failed to fetch subscribers.');
       setLoading(false);
     }
   };

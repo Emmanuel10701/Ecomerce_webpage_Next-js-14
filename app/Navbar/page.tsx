@@ -24,8 +24,8 @@ const LINKS: Link[] = [
 const Navbar: React.FC<{ onSearch: (query: string) => void }> = ({ onSearch }) => {
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
   const [searchTerm, setSearchTerm] = useState<string>('');
-  const [isCartDropdownOpen, setIsCartDropdownOpen] = useState<boolean>(false); // New state for cart dropdown
-  const menuRef = useRef<HTMLDivElement>(null); // Ref for menu container
+  const [isCartDropdownOpen, setIsCartDropdownOpen] = useState<boolean>(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const navigate = useRouter();
   const path = usePathname();
 
@@ -36,7 +36,7 @@ const Navbar: React.FC<{ onSearch: (query: string) => void }> = ({ onSearch }) =
   const totalPrice = items.reduce<number>((sum, item) => sum + item.price * item.quantity, 0);
 
   const cartNavigation = () => {
-    setIsCartDropdownOpen(false); // Close the dropdown
+    setIsCartDropdownOpen(false);
     navigate.push("/Cartpage");
   };
 
@@ -56,17 +56,13 @@ const Navbar: React.FC<{ onSearch: (query: string) => void }> = ({ onSearch }) =
   }, []);
 
   useEffect(() => {
-    // Function to handle click outside menu
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setIsMenuOpen(false);
       }
     };
 
-    // Add event listener on mount
     document.addEventListener('mousedown', handleClickOutside);
-
-    // Cleanup event listener on unmount
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
@@ -78,14 +74,14 @@ const Navbar: React.FC<{ onSearch: (query: string) => void }> = ({ onSearch }) =
   };
 
   return (
-    <div className="relative flex items-center justify-between ">
-      <div className="navbar bg-slate-100 p-4 flex items-center justify-between">
+    <div className="relative">
+      <div className="fixed top-0 left-0 right-0 bg-slate-100 p-4 flex items-center justify-between z-40">
         <div className="flex items-center space-x-4">
           <h1 className='text-3xl font-bold text-slate-400 mx-4 sm:mx-10'>Shop</h1>
           <div className="hidden md:flex ml-4 md:ml-[30%] gap-8 items-center">
             {LINKS.map((link) => (
               <Link key={link.href} href={link.href}>
-                <span className={`${link.href === path ? 'text-zinc-600  font-bold text-md' : 'text-slate-500 text-sm hover:text-slate-600'}`}>
+                <span className={`${link.href === path ? 'text-zinc-600 font-bold text-md' : 'text-slate-500 text-sm hover:text-slate-600'}`}>
                   {link.name}
                 </span>
               </Link>

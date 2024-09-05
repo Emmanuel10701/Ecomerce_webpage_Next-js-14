@@ -1,53 +1,14 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Image from "next/image";
 import { useRouter } from 'next/navigation';
-import { ArrowBack, Person } from '@mui/icons-material';
-import { PencilIcon, XMarkIcon, Bars3Icon, UserIcon, UsersIcon } from '@heroicons/react/24/outline';
+import { ArrowBack } from '@mui/icons-material';
 import axios from 'axios';
 import { Autocomplete, TextField } from '@mui/material';
+import Sidebar from '@/components/sidebarSetting/page';
+import { PencilIcon, XMarkIcon, Bars3Icon, UserIcon, UsersIcon } from '@heroicons/react/24/outline';
 
-// Sidebar Component
-const Sidebar: React.FC<{ onAddAdminClick: () => void; onViewAdminsClick: () => void; onAddEmployeeClick: () => void; isOpen: boolean; toggleSidebar: () => void; isAdmin: boolean }> = ({ onAddAdminClick, onViewAdminsClick, onAddEmployeeClick, isOpen, toggleSidebar, isAdmin }) => {
-  return (
-    <div className={`w-1/4 bg-gray-800 text-white h-screen ${isOpen ? 'block' : 'hidden'} sm:block`}>
-      <div className="flex items-center justify-between p-4">
-        <h2 className="text-xl font-bold">Admin Panel</h2>
-        <button onClick={toggleSidebar} className="text-white sm:hidden">
-          <Bars3Icon className="w-5 h-5" />
-        </button>
-      </div>
-      <div className="p-4">
-        <button
-          onClick={onAddAdminClick}
-          className="mb-3 bg-blue-500 hover:bg-blue-600 text-white py-2 px-3 rounded flex items-center w-full text-sm"
-        >
-          <Person className="mr-2 w-4 h-4" />
-          Add Admin
-        </button>
-        {isAdmin && (
-          <button
-            onClick={onAddEmployeeClick}
-            className="mb-3 bg-green-500 hover:bg-green-600 text-white py-2 px-3 rounded flex items-center w-full text-sm"
-          >
-            <UserIcon className="mr-2 w-4 h-4" />
-            Add Employee
-          </button>
-        )}
-        <button
-          onClick={onViewAdminsClick}
-          className="bg-gray-500 hover:bg-gray-600 text-white py-2 px-3 rounded flex items-center w-full text-sm"
-        >
-          <UsersIcon className="mr-2 w-4 h-4" />
-          View All Admins
-        </button>
-      </div>
-    </div>
-  );
-};
-
-// Modal Component
 const Modal: React.FC<{ open: boolean; onClose: () => void; title: string; children: React.ReactNode }> = ({ open, onClose, title, children }) => {
   return (
     <div className={`fixed inset-0 flex items-center justify-center ${open ? 'block' : 'hidden'} bg-gray-900 bg-opacity-50`} onClick={onClose}>
@@ -62,7 +23,6 @@ const Modal: React.FC<{ open: boolean; onClose: () => void; title: string; child
   );
 };
 
-// Main Settings Page Component
 const Settings: React.FC = () => {
   const router = useRouter();
   const [siteName, setSiteName] = useState('');
@@ -76,6 +36,8 @@ const Settings: React.FC = () => {
   const [admins, setAdmins] = useState<any[]>([]);
   const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
   const [selectedUser, setSelectedUser] = useState<any>(null);
+
+  const sidebarRef = useRef<HTMLDivElement>(null);
 
   // Handle sidebar toggle
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
@@ -141,20 +103,42 @@ const Settings: React.FC = () => {
       .catch(err => console.error(err));
   };
 
+  // Close sidebar if clicked outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (sidebarRef.current && !sidebarRef.current.contains(event.target as Node)) {
+        setSidebarOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   return (
     <div className="flex min-h-screen">
       {/* Sidebar */}
-      <Sidebar
-        onAddAdminClick={handleAddAdminClick}
-        onAddEmployeeClick={handleAddEmployeeClick}
-        onViewAdminsClick={handleViewAdminsClick}
-        isOpen={sidebarOpen}
-        toggleSidebar={toggleSidebar}
-        isAdmin={true} // Set this based on the logged-in user's role
-      />
+     <Sidebar
+      onAddAdminClick={handleAddAdminClick}
+      onAddEmployeeClick={handleAddEmployeeClick}
+      onViewAdminsClick={handleViewAdminsClick}
+      isOpen={sidebarOpen}
+      toggleSidebar={toggleSidebar}
+      isAdmin={true}
+    />
 
       {/* Main Content */}
-      <div className={`flex-1 p-6 ${sidebarOpen ? 'ml-64' : 'ml-16'} transition-all`}>
+      <div className={`flex-1 p-6 ${sidebarOpen ? 'ml-64' : 'ml-0'} bg-gray-100`}>
+      {/* Hamburger Menu */}
+        <button
+          onClick={toggleSidebar}
+          className="sm:hidden fixed top-4 left-4 p-2 bg-slate-200 text-black rounded-full shadow-lg z-50"
+        >
+          <Bars3Icon className="w-6 h-6" />
+        </button>
+
         <button
           onClick={() => router.back()}
           className="mb-6 text-white hover:bg-blue-600 bg-blue-800 py-2 px-4 rounded-full flex items-center"
@@ -164,31 +148,28 @@ const Settings: React.FC = () => {
         <h1 className="text-3xl font-bold text-center mt-4 mb-6">Dashboard Settings</h1>
         <div className="grid gap-6">
           {/* Profile Image */}
-          <div className=' '>
-            <h2 className="text-xl font-semibold mb-4">Profile Image</h2>
-            <div className="relative flex items-center">
-              <Image
-                src={profileImage ? URL.createObjectURL(profileImage) : "/images/default.png"}
-                alt="Profile Image"
-                width={150}
-                height={150}
-                className="rounded-full border-4 border-blue-500 object-cover"
+          <div className="relative flex items-center justify-center">
+            <Image
+              src={profileImage ? URL.createObjectURL(profileImage) : "/images/default.png"}
+              alt="Profile Image"
+              width={100}
+              height={100}
+              className="w-24 h-24 rounded-full border-2 border-blue-500 object-cover"
+            />
+            <label htmlFor="profileImageUpload" className="absolute bottom-0 right-0 p-1 bg-blue-500 rounded-full cursor-pointer">
+              <PencilIcon className="w-6 h-6 text-white" />
+              <input
+                type="file"
+                accept="image/*"
+                id="profileImageUpload"
+                onChange={(e) => setProfileImage(e.target.files?.[0] || null)}
+                className="hidden"
               />
-              <label htmlFor="profileImageUpload" className="absolute bottom-0 right-0 p-1 bg-blue-500 rounded-full cursor-pointer">
-                <PencilIcon className="w-6 h-6 text-white" />
-                <input
-                  type="file"
-                  accept="image/*"
-                  id="profileImageUpload"
-                  onChange={(e) => setProfileImage(e.target.files?.[0] || null)}
-                  className="hidden"
-                />
-              </label>
-            </div>
+            </label>
           </div>
 
           {/* Site Settings */}
-          <div className='flex-col md:flex-row  items-center'>
+          <div className="flex-col md:flex-row items-center">
             <h2 className="text-xl font-semibold mb-4">Site Settings</h2>
             <input
               type="text"
@@ -241,7 +222,7 @@ const Settings: React.FC = () => {
                 onClick={handleAddAdmin}
                 className="mt-4 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded"
               >
-                Add as Admin
+                Add Admin
               </button>
             </div>
           )}
@@ -264,28 +245,33 @@ const Settings: React.FC = () => {
                 onClick={handleAddEmployee}
                 className="mt-4 bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded"
               >
-                Add as Employee
+                Add Employee
               </button>
             </div>
           )}
         </div>
       </Modal>
 
-      <Modal open={modalOpen === 'viewAdmins'} onClose={closeModal} title="All Admins">
+      <Modal open={modalOpen === 'viewAdmins'} onClose={closeModal} title="View Admins">
         <div>
-          <h3 className="text-lg font-semibold mb-4">Admins</h3>
-          {/* Render the list of admins */}
-          {admins.map(admin => (
-            <div key={admin.id} className="flex items-center justify-between p-2 border-b border-gray-300">
-              <span>{admin.name}</span>
-              <button
-                onClick={() => handleRemoveAdmin(admin.id)}
-                className="text-red-500 hover:text-red-700"
-              >
-                Remove
-              </button>
-            </div>
-          ))}
+          <h3 className="text-lg font-semibold mb-4">Admin List</h3>
+          {admins.length === 0 ? (
+            <p>No admins available.</p>
+          ) : (
+            <ul>
+              {admins.map(admin => (
+                <li key={admin.id} className="flex justify-between items-center mb-2">
+                  <span>{admin.name}</span>
+                  <button
+                    onClick={() => handleRemoveAdmin(admin.id)}
+                    className="text-red-500 hover:text-red-700"
+                  >
+                    Remove
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </Modal>
     </div>

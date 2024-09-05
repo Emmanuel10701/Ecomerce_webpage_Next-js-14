@@ -1,12 +1,12 @@
 "use client";
-import React, { useState, ChangeEvent, FormEvent } from 'react';
-import { motion } from 'framer-motion';
-import { IoLocation } from 'react-icons/io5';
-import { MdMarkEmailRead } from 'react-icons/md';
-import { FaPhone } from 'react-icons/fa';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import emailjs from 'emailjs-com';
+
+import React, { useState, ChangeEvent, FormEvent } from "react";
+import { motion } from "framer-motion";
+import { IoLocation } from "react-icons/io5";
+import { MdMarkEmailRead } from "react-icons/md";
+import { FaPhone } from "react-icons/fa";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 interface FormData {
   name: string;
@@ -16,9 +16,9 @@ interface FormData {
 
 const Contact: React.FC = () => {
   const [formData, setFormData] = useState<FormData>({
-    name: '',
-    email: '',
-    message: '',
+    name: "",
+    email: "",
+    message: "",
   });
   const [loading, setLoading] = useState<boolean>(false);
 
@@ -34,16 +34,22 @@ const Contact: React.FC = () => {
     setLoading(true);
 
     try {
-      await emailjs.sendForm(
-        process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID!,
-        process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID!,
-        e.currentTarget,
-        process.env.NEXT_PUBLIC_EMAILJS_USER_ID!
-      );
-      toast.success('Message sent successfully!');
-      setFormData({ name: '', email: '', message: '' }); // Clear form fields
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        toast.success("Message sent successfully!");
+        setFormData({ name: "", email: "", message: "" }); // Clear form fields
+      } else {
+        toast.error("An error occurred, please try again.");
+      }
     } catch (error) {
-      toast.error('An error occurred, please try again.');
+      toast.error("An error occurred, please try again.");
       console.error(error);
     } finally {
       setLoading(false);
@@ -51,10 +57,13 @@ const Contact: React.FC = () => {
   };
 
   return (
-    <div className="px-4 py-10 bg-gray-50 min-h-screen">
+    <div className="px-4 py-10 bg-gray-50 mt-16 min-h-screen">
       <motion.h1
         className="text-center text-3xl mx-auto my-10 font-extrabold bg-gradient-to-r from-blue-600 via-green-500 to-indigo-400 text-transparent bg-clip-text"
-        variants={{ hidden: { opacity: 0 }, visible: { opacity: 1, transition: { duration: 0.5 } } }}
+        variants={{
+          hidden: { opacity: 0 },
+          visible: { opacity: 1, transition: { duration: 0.5 } },
+        }}
         initial="hidden"
         animate="visible"
       >
@@ -64,7 +73,10 @@ const Contact: React.FC = () => {
       <div className="flex flex-col md:flex-row px-8 gap-8">
         <motion.div
           className="flex flex-col flex-1 md:pl-20"
-          variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5 } } }}
+          variants={{
+            hidden: { opacity: 0, y: 20 },
+            visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+          }}
           initial="hidden"
           animate="visible"
         >
@@ -72,7 +84,7 @@ const Contact: React.FC = () => {
             We're Here to Help
           </h1>
           <p className="text-sm text-slate-500 mb-5">
-            Have questions about our products, need help with an order, or want to provide feedback? Our team is here to assist you. Whether you have inquiries about our product range, need support with an existing order, or require help with returns and exchanges, don't hesitate to reach out. We’re committed to providing exceptional customer service and ensuring a smooth shopping experience for you.
+            Have questions about our products, need help with an order, or want to provide feedback? Our team is here to assist you. 
           </p>
           <div className="flex items-start mt-6">
             <MdMarkEmailRead className="text-green-500 text-xl" />
@@ -90,7 +102,10 @@ const Contact: React.FC = () => {
 
         <motion.div
           className="flex flex-col flex-1 mt-10 md:mt-0"
-          variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5 } } }}
+          variants={{
+            hidden: { opacity: 0, y: 20 },
+            visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+          }}
           initial="hidden"
           animate="visible"
         >
@@ -112,7 +127,7 @@ const Contact: React.FC = () => {
               <label htmlFor="email" className="mb-1 text-sm font-semibold">Your Email</label>
               <input
                 type="email"
-                id="user_email"
+                id="email"
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
@@ -140,18 +155,13 @@ const Contact: React.FC = () => {
                 className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-md"
                 disabled={loading}
               >
-                {loading ? (
-                "sibmitting..."
-                ) : (
-                  'Submit'
-                )}
+                {loading ? "Submitting..." : "Submit"}
               </button>
             </div>
           </form>
         </motion.div>
       </div>
 
-      {/* Toast Container */}
       <ToastContainer
         position="top-right"
         autoClose={5000}

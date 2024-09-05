@@ -78,7 +78,7 @@ const About: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center py-6 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex flex-col items-center py-6 px-4 sm:px-6 mt-16 lg:px-8">
       <header className="text-center mb-8">
         <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-800 bg-gradient-to-r from-blue-600 via-green-500 to-indigo-400 inline-block text-transparent bg-clip-text">
           About Us

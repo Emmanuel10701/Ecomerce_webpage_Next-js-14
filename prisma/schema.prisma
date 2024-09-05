@@ -53,13 +53,13 @@ model Customer {
   role        Role          @default(USER) // Default role for Customer is USER
   orders      Order[]       // Define relation to Order
 }
-
 model Subscriber {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   email     String   @unique
   createdAt DateTime @default(now())
-  role      Role     @default(USER) // Default role for Subscriber is USER
+  role      Role     @default(USER)
 }
+
 model Account {
   id                String  @id @default(auto()) @map("_id") @db.ObjectId
   userId            String  @db.ObjectId

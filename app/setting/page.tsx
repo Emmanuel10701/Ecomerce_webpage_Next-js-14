@@ -126,7 +126,7 @@ const ProfileSettings: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto p-6 w-full bg-[url('/assets/profile.jpeg')] bg-cover bg-center min-h-screen">
+    <div className="container mx-auto p-6 w-full bg-[url('/assets/profile.jpeg')] bg-cover mt-16 bg-center min-h-screen">
       <div className="flex flex-col items-center">
         <div className="relative">
           <Image
