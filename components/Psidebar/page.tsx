@@ -30,7 +30,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onFilterChange, isOpen, setIsOpen }) 
     }
   });
 
-  const [isCartDropdownOpen, setIsCartDropdownOpen] = useState<boolean>(true); // Start open to render at the bottom
+  const [isCartDropdownOpen, setIsCartDropdownOpen] = useState<boolean>(true); // Initialize as open
   const { state: cartState } = useCart();
   const router = useRouter();
   const sidebarRef = useRef<HTMLDivElement>(null);
@@ -73,35 +73,38 @@ const Sidebar: React.FC<SidebarProps> = ({ onFilterChange, isOpen, setIsOpen }) 
   };
 
   const cartNavigation = () => {
-    setIsCartDropdownOpen(false);
+    setIsCartDropdownOpen(false); // Optionally close the dropdown when navigating
     router.push("/Cartpage");
   };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      if (sidebarRef.current && !sidebarRef.current.contains(event.target as Node)) {
+        setIsOpen(false); // Close sidebar when clicking outside
+      }
       if (cartDropdownRef.current && !cartDropdownRef.current.contains(event.target as Node)) {
-        setIsCartDropdownOpen(false);
+        setIsCartDropdownOpen(false); // Close cart dropdown when clicking outside
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [setIsOpen]);
 
   return (
     <div
       ref={sidebarRef}
-      className={`fixed top-0 left-0 h-full bg-white z-10 transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full'} w-[20vw] p-4 border-r-2 border-gray-300 rounded-sm md:w-[20vw]`}
-      style={{ minWidth: '300px' }}
+      className={`fixed top-0 left-0 h-full bg-white z-10 transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full'} w-[20vw] p-4 border-r-2 border-gray-300 rounded-sm`}
+      style={{ minWidth: '300px', display: 'flex', flexDirection: 'column' }}
     >
       <button onClick={() => setIsOpen(false)} className="absolute top-4 right-4 text-gray-600">
         <FaTimes size={24} />
       </button>
 
-      <div className="flex flex-col space-y-4">
-        <div className="space-y-2 flex-col mt-8">
+      <div className="flex flex-col flex-grow">
+        <div className="space-y-4 mt-8">
           <h2 className="text-lg text-purple-800 font-semibold mb-2">Price Range</h2>
-          <div className='flex flex-col mt-3'>
+          <div className='space-y-2'>
             <label className="inline-flex items-center">
               <input
                 type="radio"
@@ -111,7 +114,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onFilterChange, isOpen, setIsOpen }) 
                 onChange={handlePriceChange}
                 className="form-radio"
               />
-              <span className="ml-2 mt-3 font-semibold text-slate-400 text-md">Under KSH 500</span>
+              <span className="ml-2 font-semibold text-slate-400 text-md">Under KSH 500</span>
             </label>
             <label className="inline-flex items-center">
               <input
@@ -159,15 +162,14 @@ const Sidebar: React.FC<SidebarProps> = ({ onFilterChange, isOpen, setIsOpen }) 
             </label>
           </div>
         </div>
-      </div>
 
-      {/* Cart Dropdown Box at the Bottom */}
-      <div className="absolute bottom-4 left-0 right-0">
-        <div ref={cartDropdownRef} className="card card-compact dropdown-content bg-base-100 z-[1] mt-3 w-52 shadow">
+        {/* Cart Dropdown Box */}
+        <div ref={cartDropdownRef} className={`card card-compact dropdown-content bg-base-100  mt-8 w-full max-w-sm shadow ${isCartDropdownOpen ? 'block' : ''}`}>
           <div className="card-body">
-            <span className="text-lg font-bold">My cart</span>
+            <h1 className='text-2xl text-purple-700 mb-2'>Your cart</h1>
+            <span className="text-lg font-bold text-blue-700">({totalItems} items)</span>
             <span className="text-info">Subtotal: KSH {totalPrice.toFixed(2)}</span>
-            <div className="card-actions">
+            <div className="card-actions mt-4">
               <button className="btn btn-primary btn-block" onClick={cartNavigation}>View cart</button>
             </div>
           </div>

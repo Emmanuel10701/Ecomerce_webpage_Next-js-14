@@ -40,7 +40,7 @@ const HomePage: React.FC = () => {
     categorys: {} as Record<string, boolean>, // Initialize as an empty Record
   });
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10; // Updated to 12 items per page
+  const itemsPerPage = 10; // Updated to 10 items per page
 
   const images = [
     { src: '/images/2.jpg', text: 'E-commerce Deals' },
@@ -122,7 +122,7 @@ const HomePage: React.FC = () => {
         id="sidebar"
         className={`fixed top-0 left-0 h-full bg-white shadow-lg transition-transform duration-300 ease-in-out ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } z-30 w-[20vw]`}
+        } z-30 w-[20vw] md:w-[15vw] lg:w-[12vw]`}
       >
         <button
           onClick={() => setIsSidebarOpen(false)}
@@ -144,32 +144,37 @@ const HomePage: React.FC = () => {
         <FaBars size={16} />
       </button>
 
-      <div className="md:flex md:flex-row items-center">
+      <div className="md:flex md:flex-row items-start">
         {/* Category List */}
-        <div className="flex-none relative md:w-2/6 bg-white p-4">
+        <div className="flex-none relative md:w-[22%] lg:w-2/5 bg-white p-4">
           <section className="py-6">
-            <h2 className="text-xl font-bold mb-6 text-slate-500">Categories</h2>
+            <h2 className="text-xl font-bold mb-6 mt-2 text-slate-500">Categories</h2>
             <div className="flex flex-col space-y-4">
               {categories.map((category) => (
                 <button
                   key={category}
                   onClick={() => setSelectedCategory(category)}
-                  className={`text-md font-semibold text-slate-500 block w-full text-left p-2 ${selectedCategory === category ? 'bg-gray-200' : ''}`}
+                  className={`text-md font-semibold block w-3/4 text-center p-2 rounded-full ${
+                    selectedCategory === category ? 'bg-blue-500 text-white' : 'bg-gray-200 text-slate-500'
+                  }`}
                 >
                   {category}
                 </button>
               ))}
               <button
                 onClick={() => setSelectedCategory(null)}
-                className={`text-md font-semibold text-slate-500 block w-full text-left p-2 ${selectedCategory === null ? 'bg-gray-200' : ''}`}
+                className={`text-md font-semibold block w-3/4 text-center p-2 rounded-full ${
+                  selectedCategory === null ? 'bg-blue-500 text-white' : 'bg-gray-200 text-slate-500'
+                }`}
               >
                 All Categories
               </button>
             </div>
           </section>
         </div>
+
         {/* Carousel */}
-        <div className="relative h-[65vh] w-[76%]">
+        <div className="relative h-[30vh] md:h-[58vh] lg:h-[67vh] mt-[80px] w-full md:w-[78%] lg:w-[80%]">
           <div className="relative h-full group">
             <Image
               src={images[currentIndex].src}
@@ -178,7 +183,7 @@ const HomePage: React.FC = () => {
               objectFit="cover"
               className="rounded-xl"
             />
-            <div className="absolute inset-0 flex items-center justify-center text-white text-2xl md:text-3xl font-bold bg-black bg-opacity-40 rounded-xl p-4">
+            <div className="absolute inset-0 flex items-center justify-center text-white text-xl md:text-2xl lg:text-3xl font-bold bg-black bg-opacity-40 rounded-xl p-4">
               {images[currentIndex].text}
             </div>
             <button
@@ -215,9 +220,9 @@ const HomePage: React.FC = () => {
       </div>
 
       {/* Search and Products */}
-      <div className="flex flex-col  p-4">
+      <div className="flex flex-col p-4">
         {/* Search */}
-        <div className="flex w-1/2  ml-[30%]  md:flex-row gap-4 mb-4">
+        <div className="flex flex-col sm:flex-row gap-4 mb-4 md:mx-[25%] mx-3 w-2/3">
           <input
             type="text"
             value={searchTerm}
@@ -229,35 +234,39 @@ const HomePage: React.FC = () => {
             onClick={handleSearch}
             className="flex bg-gradient-to-r from-orange-500 via-red-500 to-red-400 py-2 px-4 rounded-lg items-center shadow-md hover:shadow-lg text-white transition-all duration-300"
           >
-            Search           
-            <FaSearch size={14} />
+            Search
+            <FaSearch size={14} className="ml-2" />
           </button>
         </div>
 
         {/* Products Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 gap-10 p-2 mb-4 mx-[5%]">
-          {isLoading ? (
-            <div className="flex items-center justify-center ml-[45%] w-full h-32">
-              <CircularProgress />
-            </div>
-          ) : error ? (
-            <p className="text-center w-full text-red-600">{error}</p>
-          ) : currentProducts.length > 0 ? (
-            currentProducts.map((product) => (
-              <Card
-                key={product.id}
-                id={product.id}
-                title={product.title}
-                price={product.price}
-                oldPrice={product.oldPrice}
-                imageUrl={product.imageUrl}
-                description={product.description}
-                rating={product.rating}
-              />
-            ))
-          ) : (
-            <p className="text-center flex-1 flex w-full text-red-700">No results found for "<strong>{searchTerm}</strong>"</p>
-          )}
+        <div className="flex-grow">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-10 p-2 mb-4">
+            {isLoading ? (
+              <div className="flex items-center justify-center w-full h-32">
+                <CircularProgress />
+              </div>
+            ) : error ? (
+              <p className="text-center w-full text-red-600">{error}</p>
+            ) : currentProducts.length > 0 ? (
+              currentProducts.map((product) => (
+                <Card
+                  key={product.id}
+                  id={product.id}
+                  title={product.title}
+                  price={product.price}
+                  oldPrice={product.oldPrice}
+                  imageUrl={product.imageUrl}
+                  description={product.description}
+                  rating={product.rating}
+                />
+              ))
+            ) : (
+              <div className="flex justify-center items-center w-full h-32">
+                <p className="text-center text-black text-lg">No such Product</p>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Pagination */}

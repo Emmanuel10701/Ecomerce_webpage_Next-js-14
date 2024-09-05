@@ -17,6 +17,7 @@
     "@fullcalendar/react": "^6.1.15",
     "@fullhuman/postcss-purgecss": "^6.0.0",
     "@heroicons/react": "^2.1.5",
+    "@mui/icons-material": "^5.16.7",
     "@mui/material": "^5.16.7",
     "@next-auth/prisma-adapter": "^1.0.7",
     "@react-pdf/renderer": "^3.4.4",
@@ -73,7 +74,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@prisma/client": "^5.18.0",
+    "@prisma/client": "^5.19.1",
     "@types/bcrypt": "^5.0.2",
     "@types/date-fns": "^2.5.3",
     "@types/formidable": "^3.4.5",
@@ -89,8 +90,8 @@
     "eslint": "^8",
     "eslint-config-next": "14.2.5",
     "postcss": "^8.4.41",
-    "prisma": "^5.18.0",
+    "prisma": "^5.19.1",
     "tailwindcss": "^3.4.1",
-    "typescript": "^5"
+    "typescript": "^5.5.4"
   }
 }

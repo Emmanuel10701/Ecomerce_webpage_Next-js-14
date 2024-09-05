@@ -1,52 +1,53 @@
-import { PrismaClient } from '@prisma/client';
-import type { NextApiRequest, NextApiResponse } from 'next';
+// Import Prisma client instance
+import prisma from '../../../libs/prismadb'; // Adjust the path as necessary
+import { NextRequest, NextResponse } from 'next/server';
 
-const prisma = new PrismaClient();
+// POST request handler for creating a new subscriber
+export async function POST(req: NextRequest) {
+  try {
+    const { email } = await req.json();
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method === 'POST') {
-    // Handle POST request to add a new subscriber
-    try {
-      const { email }: { email: string } = req.body;
-
-      // Validate email
-      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        return res.status(400).json({ message: 'Invalid email address' });
-      }
-
-      // Check if the email is already subscribed
-      const existingSubscriber = await prisma.subscriber.findUnique({
-        where: { email },
-      });
-
-      if (existingSubscriber) {
-        return res.status(400).json({ message: 'Email already subscribed' });
-      }
-
-      // Add new subscriber
-      await prisma.subscriber.create({
-        data: { email },
-      });
-
-      return res.status(200).json({ message: 'Subscription successful' });
-
-    } catch (error) {
-      console.error(error);
-      return res.status(500).json({ message: 'Server error' });
+    // Validate email
+    if (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return NextResponse.json({ message: 'Invalid email address' }, { status: 400 });
     }
 
-  } else if (req.method === 'GET') {
-    // Handle GET request to retrieve all subscribers
-    try {
-      const subscribers = await prisma.subscriber.findMany();
-      return res.status(200).json(subscribers);
-    } catch (error) {
-      console.error(error);
-      return res.status(500).json({ message: 'Server error' });
+    // Check if the email is already subscribed
+    const existingSubscriber = await prisma.subscriber.findUnique({
+      where: { email },
+    });
+
+    if (existingSubscriber) {
+      return NextResponse.json({ message: 'Email already subscribed' }, { status: 400 });
     }
 
-  } else {
-    // Handle unsupported HTTP methods
-    return res.status(405).json({ message: 'Method not allowed' });
+    // Add new subscriber
+    await prisma.subscriber.create({
+      data: {
+        email,
+        role: 'USER', // Default role
+      },
+    });
+
+    return NextResponse.json({ message: 'Subscription successful' });
+
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.error('Error in POST request:', error.message, error.stack);
+      return NextResponse.json({ message: 'Server error', error: error.message }, { status: 500 });
+    } else {
+      console.error('Unexpected error in POST request:', error);
+      return NextResponse.json({ message: 'Server error', error: 'Unexpected error occurred' }, { status: 500 });
+    }
+  }
+}
+
+export async function GET(req: NextRequest) {
+  try {
+    const subscribers = await prisma.subscriber.findMany();
+    return NextResponse.json(subscribers);
+  } catch (error: unknown) {
+    console.error('Error in GET request:', error);
+    return NextResponse.json({ message: 'Server error', error: 'An error occurred while retrieving subscribers' }, { status: 500 });
   }
 }

@@ -1,16 +1,19 @@
 "use client";
 
-
-
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+
 const NotFoundPage = () => {
   const router = useRouter();
 
   useEffect(() => {
-    // Redirect the user after a few seconds or based on user interaction.
+    // Redirect the user back in history or to the homepage after 5 seconds if there is no history
     const timer = setTimeout(() => {
-      router.push('/');
+      if (window.history.length > 2) {
+        router.back(); // Go back to the previous page
+      } else {
+        router.push('/'); // Fallback to homepage if no history
+      }
     }, 5000); // Redirect after 5 seconds
 
     return () => clearTimeout(timer); // Clean up the timer on unmount
@@ -24,13 +27,19 @@ const NotFoundPage = () => {
           Oops! The page you’re looking for doesn’t seem to exist.
         </p>
         <button
-          onClick={() => router.push('/')}
+          onClick={() => {
+            if (window.history.length > 2) {
+              router.back(); // Go back to the previous page
+            } else {
+              router.push('/'); // Fallback to homepage if no history
+            }
+          }}
           className="bg-blue-600 text-white hover:bg-blue-700 transition-colors duration-300 py-2 px-6 rounded-lg font-semibold"
         >
           Go to Home
         </button>
         <p className="mt-4 text-sm text-slate-500">
-          Redirecting you to the homepage in 5 seconds.....
+          Redirecting you to the previous page in 5 seconds.....
         </p>
       </div>
     </div>

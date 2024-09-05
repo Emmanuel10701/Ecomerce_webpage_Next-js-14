@@ -24,9 +24,25 @@ model User {
   image          String?
   accounts       Account[]
   passwordResets PasswordReset[]
-  role           Role            @default(STAFF) // Set default role to STAFF
+  role           Role            @default(STAFF) // Default role for User is STAFF
+  employees      Employee[]      // Relation to Employee
 }
 
+
+
+model Admin {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  employeeId String   @db.ObjectId @unique // Ensure unique constraint for one-to-one relation
+  role       Role     @default(ADMIN) // Default role for Admin is ADMIN
+}
+model Employee {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  name       String
+  userId     String   @db.ObjectId
+  role       Role     @default(STAFF) // Default role for Employee is STAFF
+  user       User     @relation(fields: [userId], references: [id])
+  adminId    String?  @db.ObjectId @unique // Ensure unique constraint for one-to-one relation
+}
 model Customer {
   id          String        @id @default(auto()) @map("_id") @db.ObjectId
   name        String
@@ -35,17 +51,15 @@ model Customer {
   address     String
   userId      String        @db.ObjectId
   role        Role          @default(USER) // Default role for Customer is USER
-  orders      Order[]       // Add this line to define the relation
+  orders      Order[]       // Define relation to Order
 }
 
 model Subscriber {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   email     String   @unique
   createdAt DateTime @default(now())
-  userId    String   @db.ObjectId
   role      Role     @default(USER) // Default role for Subscriber is USER
 }
-
 model Account {
   id                String  @id @default(auto()) @map("_id") @db.ObjectId
   userId            String  @db.ObjectId
@@ -103,7 +117,6 @@ model OrderItem {
   quantity  Int
   price     Float
   order     Order    @relation(fields: [orderId], references: [id])
-  product   Product  @relation(fields: [id], references: [id]) // Define the relation
 }
 
 enum OrderStatus {
