@@ -1,4 +1,3 @@
-// pages/api/employees.ts
 import { PrismaClient } from '@prisma/client';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
@@ -17,11 +16,32 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   } else if (req.method === 'POST') {
     // Handle POST request to add a new employee
     try {
-      const { name, email }: { name: string; email: string } = req.body;
-      await prisma.employee.create({
-        data: { name, email },
+      const { name, email, userId }: { name: string; email: string; userId: string } = req.body;
+
+      // Validate that all required fields are provided
+      if (!name || !email || !userId) {
+        return res.status(400).json({ message: 'Missing required fields' });
+      }
+
+      // Check if the user exists
+      const userExists = await prisma.user.findUnique({
+        where: { id: userId },
       });
-      return res.status(200).json({ message: 'Employee added successfully' });
+
+      if (!userExists) {
+        return res.status(400).json({ message: 'User not found' });
+      }
+
+      // Create the new employee
+      const newEmployee = await prisma.employee.create({
+        data: {
+          name,
+          email,
+          user: { connect: { id: userId } },
+        },
+      });
+
+      return res.status(200).json(newEmployee);
     } catch (error) {
       console.error('Error adding employee:', error);
       return res.status(500).json({ message: 'Server error' });

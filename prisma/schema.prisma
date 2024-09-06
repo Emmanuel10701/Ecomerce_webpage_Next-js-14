@@ -37,10 +37,10 @@ model Admin {
 model Employee {
   id         String   @id @default(auto()) @map("_id") @db.ObjectId
   name       String
+  email     String   @unique
   userId     String   @db.ObjectId
   role       Role     @default(STAFF)
   user       User     @relation(fields: [userId], references: [id])
-  adminId    String?  @db.ObjectId @unique
 }
 
 model Customer {
@@ -55,10 +55,9 @@ model Customer {
 }
 
 model Subscriber {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
   email     String   @unique
   createdAt DateTime @default(now())
-  role      String
 }
 
 model Account {

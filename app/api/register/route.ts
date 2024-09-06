@@ -11,6 +11,7 @@ interface RegisterRequestBody {
 
 const PASSWORD_REGEX = /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 
+// POST request handler for user registration
 export async function POST(request: NextRequest) {
   try {
     const body: RegisterRequestBody = await request.json();
@@ -57,6 +58,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(newUser);
   } catch (error) {
     console.error('Error during registration:', error);
+    return new NextResponse(
+      JSON.stringify({ error: 'Internal Server Error' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+}
+
+// GET request handler for retrieving all users
+export async function GET() {
+  try {
+    const users = await prisma.user.findMany();
+    return NextResponse.json(users);
+  } catch (error) {
+    console.error('Error retrieving users:', error);
     return new NextResponse(
       JSON.stringify({ error: 'Internal Server Error' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }

@@ -1,5 +1,4 @@
 // pages/api/admins.ts
-import { connectDB } from '@/libs/mongodb';
 import { PrismaClient } from '@prisma/client';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
@@ -10,7 +9,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   
     // Handle GET request to retrieve all admins
     try {
-      await connectDB()
+     
       const admins = await prisma.admin.findMany();
       return res.status(200).json(admins);
     } catch (error) {
@@ -53,7 +52,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   } else if (req.method === 'DELETE') {
     // Handle DELETE request to remove an admin
     try {
-      await connectDB()
+     
       const { id }: { id: string } = req.body;
       await prisma.admin.delete({
         where: { id },
