@@ -101,14 +101,18 @@ model Product {
 }
 
 model Order {
-  id          String        @id @default(auto()) @map("_id") @db.ObjectId
-  customerId  String        @db.ObjectId
-  status      OrderStatus  @default(PENDING)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  customer    Customer     @relation(fields: [customerId], references: [id])
-  items       OrderItem[]
+  id             String   @id @default(cuid())
+  name           String
+  email          String
+  address        String
+  city           String
+  zip            String
+  items          Json
+  paymentMethod  String
+  status         String   @default("pending")
+  createdAt      DateTime @default(now())
 }
+
 
 model OrderItem {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
