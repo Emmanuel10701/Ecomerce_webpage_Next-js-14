@@ -24,25 +24,25 @@ model User {
   image          String?
   accounts       Account[]
   passwordResets PasswordReset[]
-  role           Role            @default(STAFF) // Default role for User is STAFF
-  employees      Employee[]      // Relation to Employee
+  role           Role            @default(STAFF)
+  employees      Employee[]
 }
-
-
 
 model Admin {
   id         String   @id @default(auto()) @map("_id") @db.ObjectId
-  employeeId String   @db.ObjectId @unique // Ensure unique constraint for one-to-one relation
-  role       Role     @default(ADMIN) // Default role for Admin is ADMIN
+  employeeId String   @db.ObjectId @unique
+  role       Role     @default(ADMIN)
 }
+
 model Employee {
   id         String   @id @default(auto()) @map("_id") @db.ObjectId
   name       String
   userId     String   @db.ObjectId
-  role       Role     @default(STAFF) // Default role for Employee is STAFF
+  role       Role     @default(STAFF)
   user       User     @relation(fields: [userId], references: [id])
-  adminId    String?  @db.ObjectId @unique // Ensure unique constraint for one-to-one relation
+  adminId    String?  @db.ObjectId @unique
 }
+
 model Customer {
   id          String        @id @default(auto()) @map("_id") @db.ObjectId
   name        String
@@ -50,14 +50,15 @@ model Customer {
   phoneNumber String?
   address     String
   userId      String        @db.ObjectId
-  role        Role          @default(USER) // Default role for Customer is USER
-  orders      Order[]       // Define relation to Order
+  role        Role          @default(USER)
+  orders      Order[]
 }
+
 model Subscriber {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   email     String   @unique
   createdAt DateTime @default(now())
-  role      Role     @default(USER)
+  role      String
 }
 
 model Account {
@@ -97,7 +98,7 @@ model Product {
   image       String?
   quantity    Int?     @default(0)
   createdAt   DateTime @default(now())
-  category    String?  // Ensure this matches your code
+  category    String?
 }
 
 model Order {
@@ -106,8 +107,8 @@ model Order {
   status      OrderStatus  @default(PENDING)
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
-  customer    Customer     @relation(fields: [customerId], references: [id]) // Define the relation
-  items       OrderItem[]  // Relation to OrderItem
+  customer    Customer     @relation(fields: [customerId], references: [id])
+  items       OrderItem[]
 }
 
 model OrderItem {

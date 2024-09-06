@@ -148,16 +148,16 @@ const Settings: React.FC = () => {
         <h1 className="text-3xl font-bold text-center mt-4 mb-6">Dashboard Settings</h1>
         <div className="grid gap-6">
           {/* Profile Image */}
-          <div className="relative flex items-center justify-center">
+          <div className=" flex items-center relative justify-center">
             <Image
               src={profileImage ? URL.createObjectURL(profileImage) : "/images/default.png"}
               alt="Profile Image"
               width={100}
               height={100}
-              className="w-24 h-24 rounded-full border-2 border-blue-500 object-cover"
+              className="w-24 h-24 rounded-full  border-2 border-blue-500 object-cover"
             />
             <label htmlFor="profileImageUpload" className="absolute bottom-0 right-0 p-1 bg-blue-500 rounded-full cursor-pointer">
-              <PencilIcon className="w-6 h-6 text-white" />
+              <PencilIcon className="w-6 h-6 text-white " />
               <input
                 type="file"
                 accept="image/*"

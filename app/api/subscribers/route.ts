@@ -1,5 +1,4 @@
-// app/api/subscribers/route.ts
-import prisma from '../../../libs/prismadb'; // Adjust the path as necessary
+import prisma from '../../../libs/prismadb'; // Ensure the path is correct
 import { NextRequest, NextResponse } from 'next/server';
 
 // POST request handler for creating a new subscriber
@@ -33,15 +32,29 @@ export async function POST(req: NextRequest) {
 
   } catch (error: unknown) {
     if (error instanceof Error) {
-      console.error('Error in POST request:', error.message, error.stack);
-      return NextResponse.json({ message: 'Server error', error: error.message }, { status: 500 });
+      // Log detailed error information
+      console.error('Error in POST request:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+        // Optionally log more context if available
+      });
+      return NextResponse.json(
+        { message: 'Server error', error: error.message, details: error.stack },
+        { status: 500 }
+      );
     } else {
+      // Log unexpected error type
       console.error('Unexpected error in POST request:', error);
-      return NextResponse.json({ message: 'Server error', error: 'Unexpected error occurred' }, { status: 500 });
+      return NextResponse.json(
+        { message: 'Server error', error: 'Unexpected error occurred' },
+        { status: 500 }
+      );
     }
   }
 }
 
+// GET request handler for retrieving all subscribers
 export async function GET() {
   try {
     const subscribers = await prisma.subscriber.findMany({
@@ -52,14 +65,29 @@ export async function GET() {
         role: true,
       },
     });
+    console.log('Retrieved subscribers:', subscribers);
+
     return NextResponse.json(subscribers);
   } catch (error: unknown) {
     if (error instanceof Error) {
-      console.error('Database operation error:', error.message);
-      return NextResponse.json({ error: 'Database operation failed', details: error.message }, { status: 500 });
+      // Log detailed error information
+      console.error('Database operation error:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+        // Optionally log more context if available
+      });
+      return NextResponse.json(
+        { error: 'Database operation failed', details: error.message },
+        { status: 500 }
+      );
     } else {
+      // Log unexpected error type
       console.error('Unexpected error in GET request:', error);
-      return NextResponse.json({ error: 'Unexpected error occurred' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Unexpected error occurred' },
+        { status: 500 }
+      );
     }
   }
 }
