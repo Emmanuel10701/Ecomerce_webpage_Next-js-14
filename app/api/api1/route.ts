@@ -1,4 +1,3 @@
-// app/api/subscribers/route.ts
 import prisma from '../../../libs/prismadb'; // Adjust the path as necessary
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -25,7 +24,7 @@ export async function POST(req: NextRequest) {
     await prisma.subscriber.create({
       data: {
         email,
-        role: 'USER', // Default role
+        // No role field present in the schema
       },
     });
 
@@ -56,7 +55,7 @@ export async function GET() {
         id: true,
         email: true,
         createdAt: true,
-        role: true,
+        // No role field present in the schema
       },
     });
     console.log(subscribers);
