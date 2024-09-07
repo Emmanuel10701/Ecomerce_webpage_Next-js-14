@@ -27,8 +27,9 @@ const generateColorFromString = (str: string) => {
 const NAV_ITEMS: NavItem[] = [
   { path: '/analytics', label: 'Dashboard', icon: <FaHome className="text-blue-500" /> },
   { path: '/employees', label: 'Employees', icon: <FaUsers className="text-green-500" /> },
-  { path: '/users', label: 'Customers', icon: <FaUsers className="text-green-900" /> },
+  { path: '/castomers', label: 'Customers', icon: <FaUsers className="text-green-900" /> },
   { path: '/productstable', label: 'Products', icon: <FaBox className="text-green-500" /> },
+  { path: '/users', label: 'Users', icon: <FaUsers className="text-green-900" /> },
   { path: '/calendar', label: 'Calendar', icon: <FaCalendarAlt className="text-purple-500" /> },
   { path: '/settings', label: 'Settings', icon: <FaCog className="text-gray-500" /> },
 ];

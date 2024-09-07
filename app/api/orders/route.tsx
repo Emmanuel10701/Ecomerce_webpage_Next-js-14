@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import prisma from '../../../libs/prismadb'; // Import from the correct path
+import prisma from '../../../libs/prismadb'; // Ensure the import path is correct
 
 // GET request to fetch all orders or a single order by ID
 export async function GET(req: NextRequest) {
@@ -43,8 +43,6 @@ export async function GET(req: NextRequest) {
 }
 
 // POST request to create a new order
-
-// POST request to create a new order
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -53,6 +51,11 @@ export async function POST(req: NextRequest) {
     // Validate required fields
     if (!name || !email || !address || !customerId || !items || typeof total !== 'number' || !paymentMethod) {
       return new NextResponse(JSON.stringify({ error: 'Name, email, address, customerId, items, total, and paymentMethod are required' }), { status: 400 });
+    }
+
+    // Validate `items` structure
+    if (!Array.isArray(items) || !items.every(item => item.productId && typeof item.quantity === 'number' && typeof item.price === 'number')) {
+      return new NextResponse(JSON.stringify({ error: 'Invalid items format' }), { status: 400 });
     }
 
     // Create a new order
@@ -72,9 +75,9 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json(newOrder, { status: 201 });
-  } catch (error) {
+  } catch (error:any) {
     console.error('Error creating order:', error);
-    return new NextResponse(JSON.stringify({ error: 'Error creating order' }), { status: 500 });
+    return new NextResponse(JSON.stringify({ error: `Error creating order: ${error.message}` }), { status: 500 });
   }
 }
 

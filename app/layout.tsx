@@ -31,8 +31,9 @@ export default function RootLayout({
   const listpage = pathname.startsWith('/productstable'); // Add this line
   const employees = pathname.startsWith('/employees'); // Add this line
   const settings = pathname.startsWith('/settingPage'); // Add this line
+  const castomers = pathname.startsWith('/castomers'); // Add this line
   const allProducts = pathname.startsWith('/Productslistpage'); // Add this line
-  const isExcludedPage = isAnalyticsPage ||isNotfound||allProducts||listpage||employees||settings||subscribers|| isUserPage ||isRegister|| isWorkersPage||isLogin ||isCalender|| pathname.startsWith('/maindata');
+  const isExcludedPage = isAnalyticsPage ||isNotfound||castomers||allProducts||listpage||employees||settings||subscribers|| isUserPage ||isRegister|| isWorkersPage||isLogin ||isCalender|| pathname.startsWith('/maindata');
 
   return (
     <html lang="en">
