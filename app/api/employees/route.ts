@@ -1,52 +1,104 @@
-import { PrismaClient } from '@prisma/client';
-import type { NextApiRequest, NextApiResponse } from 'next';
+import { NextRequest, NextResponse } from 'next/server';
+import prisma from '../../../libs/prismadb'; // Adjust the path if needed
 
-const prisma = new PrismaClient();
+// Handle POST request
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { name, userId } = body;
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method === 'GET') {
-    // Handle GET request to retrieve all employees
-    try {
-      const employees = await prisma.employee.findMany();
-      return res.status(200).json(employees);
-    } catch (error) {
-      console.error('Error fetching employees:', error);
-      return res.status(500).json({ message: 'Server error' });
+    // Validate required fields
+    if (!name || !userId) {
+      return new NextResponse(JSON.stringify({ error: 'Name and userId are required' }), { status: 400 });
     }
-  } else if (req.method === 'POST') {
-    // Handle POST request to add a new employee
-    try {
-      const { name, email, userId }: { name: string; email: string; userId: string } = req.body;
 
-      // Validate that all required fields are provided
-      if (!name || !email || !userId) {
-        return res.status(400).json({ message: 'Missing required fields' });
-      }
+    // Check if the user exists
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
 
-      // Check if the user exists
-      const userExists = await prisma.user.findUnique({
-        where: { id: userId },
-      });
+    if (!user) {
+      return new NextResponse(JSON.stringify({ error: 'User not found' }), { status: 404 });
+    }
 
-      if (!userExists) {
-        return res.status(400).json({ message: 'User not found' });
-      }
+    // Create the new employee
+    const newEmployee = await prisma.employee.create({
+      data: {
+        name,
+        user: { connect: { id: userId } },
+      },
+      include: {
+        user: { select: { email: true } },
+      },
+    });
 
-      // Create the new employee
-      const newEmployee = await prisma.employee.create({
-        data: {
-          name,
-          email,
-          user: { connect: { id: userId } },
+    return NextResponse.json({
+      ...newEmployee,
+      email: newEmployee.user.email,
+    }, { status: 201 });
+  } catch (error: any) {
+    console.error('Error creating employee:', error);
+    return new NextResponse(JSON.stringify({ error: 'Error creating employee', details: error.message }), { status: 500 });
+  }
+}
+
+// Handle GET request
+export async function GET(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
+
+    if (id) {
+      // Fetch a single employee by ID
+      const employee = await prisma.employee.findUnique({
+        where: { id: String(id) },
+        include: {
+          user: { select: { email: true } },
         },
       });
 
-      return res.status(200).json(newEmployee);
-    } catch (error) {
-      console.error('Error adding employee:', error);
-      return res.status(500).json({ message: 'Server error' });
+      if (!employee) {
+        return new NextResponse(JSON.stringify({ error: 'Employee not found' }), { status: 404 });
+      }
+
+      return NextResponse.json({
+        ...employee,
+        email: employee.user.email,
+      });
+    } else {
+      // Fetch all employees
+      const employees = await prisma.employee.findMany({
+        include: {
+          user: { select: { email: true } },
+        },
+      });
+
+      return NextResponse.json(employees);
     }
-  } else {
-    return res.status(405).json({ message: 'Method not allowed' });
+  } catch (error: any) {
+    console.error('Error fetching employees:', error);
+    return new NextResponse(JSON.stringify({ error: 'Error fetching employees', details: error.message }), { status: 500 });
+  }
+}
+
+// Handle DELETE request
+export async function DELETE(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return new NextResponse(JSON.stringify({ error: 'ID is required' }), { status: 400 });
+    }
+
+    // Delete employee by ID
+    const deletedEmployee = await prisma.employee.delete({
+      where: { id: String(id) },
+    });
+
+    return NextResponse.json(deletedEmployee);
+  } catch (error: any) {
+    console.error('Error deleting employee:', error);
+    return new NextResponse(JSON.stringify({ error: 'Error deleting employee', details: error.message }), { status: 500 });
   }
 }

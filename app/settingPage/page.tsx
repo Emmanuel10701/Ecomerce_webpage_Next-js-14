@@ -1,13 +1,12 @@
 "use client";
-
 import React, { useState, useEffect, useRef } from 'react';
 import Image from "next/image";
 import { useRouter } from 'next/navigation';
 import { ArrowBack } from '@mui/icons-material';
 import axios from 'axios';
-import { Autocomplete, TextField, CircularProgress } from '@mui/material';
+import { Autocomplete, TextField, CircularProgress, Snackbar, Alert } from '@mui/material';
 import Sidebar from '@/components/sidebarSetting/page';
-import { PencilIcon, XMarkIcon, Bars3Icon } from '@heroicons/react/24/outline';
+import { PencilIcon, XMarkIcon, Bars3Icon, CheckCircleIcon } from '@heroicons/react/24/outline';
 
 const Modal: React.FC<{ open: boolean; onClose: () => void; title: string; children: React.ReactNode }> = ({ open, onClose, title, children }) => {
   return (
@@ -36,7 +35,11 @@ const Settings: React.FC = () => {
   const [admins, setAdmins] = useState<any[]>([]);
   const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
   const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [selectedAdmin, setSelectedAdmin] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error'>('success');
 
   const sidebarRef = useRef<HTMLDivElement>(null);
 
@@ -51,17 +54,14 @@ const Settings: React.FC = () => {
 
   // Fetch data from API
   useEffect(() => {
-    // Fetch employees
     axios.get('/api/employees')
       .then(response => setEmployees(response.data))
       .catch(error => console.error(error));
 
-    // Fetch users
     axios.get('/api/register')
       .then(response => setUsers(response.data))
       .catch(error => console.error(error));
 
-    // Fetch admins
     axios.get('/api/admins')
       .then(response => setAdmins(response.data))
       .catch(error => console.error(error));
@@ -78,11 +78,15 @@ const Settings: React.FC = () => {
 
     try {
       await axios.post('/api/settings', formData);
-      alert('Changes saved');
+      setSnackbarMessage('Changes saved');
+      setSnackbarSeverity('success');
     } catch (error) {
       console.error('Error saving changes:', error);
+      setSnackbarMessage('Error saving changes');
+      setSnackbarSeverity('error');
     } finally {
       setLoading(false);
+      setSnackbarOpen(true);
     }
   };
 
@@ -90,13 +94,17 @@ const Settings: React.FC = () => {
     if (selectedEmployee) {
       setLoading(true);
       try {
-        await axios.post('/api/add-admin', { employeeId: selectedEmployee.id });
-        alert('Admin added successfully');
+        await axios.post('/api/admins', { employeeId: selectedEmployee.id });
+        setSnackbarMessage('Admin added successfully');
+        setSnackbarSeverity('success');
       } catch (err) {
         console.error(err);
+        setSnackbarMessage('Failed to add admin');
+        setSnackbarSeverity('error');
       } finally {
         setLoading(false);
         closeModal();
+        setSnackbarOpen(true);
       }
     }
   };
@@ -105,26 +113,53 @@ const Settings: React.FC = () => {
     if (selectedUser) {
       setLoading(true);
       try {
-        await axios.post('/api/employees', { userId: selectedUser.id });
-        alert('Employee added successfully');
-      } catch (err) {
-        console.error(err);
+        await axios.post('/api/employees', { 
+          name: selectedUser.name,
+          userId: selectedUser.id
+        });
+        setSnackbarMessage('Employee added successfully');
+        setSnackbarSeverity('success');
+      } catch (error) {
+        console.error('Error adding employee:', error);
+        setSnackbarMessage('Failed to add employee');
+        setSnackbarSeverity('error');
       } finally {
         setLoading(false);
         closeModal();
+        setSnackbarOpen(true);
       }
+    }
+  };
+
+  const handleRemoveEmployee = async (userId: number) => {
+    setLoading(true);
+    try {
+      await axios.delete(`/api/employees/${userId}`);
+      setSnackbarMessage('Employee removed successfully');
+      setSnackbarSeverity('success');
+    } catch (err) {
+      console.error(err);
+      setSnackbarMessage('Failed to remove employee');
+      setSnackbarSeverity('error');
+    } finally {
+      setLoading(false);
+      setSnackbarOpen(true);
     }
   };
 
   const handleRemoveAdmin = async (adminId: number) => {
     setLoading(true);
     try {
-      await axios.post('/api/admins', { adminId });
-      alert('Admin removed successfully');
+      await axios.post('/api/admins/remove', { adminId });
+      setSnackbarMessage('Admin removed successfully');
+      setSnackbarSeverity('success');
     } catch (err) {
       console.error(err);
+      setSnackbarMessage('Failed to remove admin');
+      setSnackbarSeverity('error');
     } finally {
       setLoading(false);
+      setSnackbarOpen(true);
     }
   };
 
@@ -155,7 +190,7 @@ const Settings: React.FC = () => {
       />
 
       {/* Main Content */}
-      <div className={`flex-1 p-6 ${sidebarOpen ? 'ml-64' : 'ml-0'} bg-gray-100`}>
+      <div className={`flex-1 p-6 ${sidebarOpen ? 'ml-0' : 'ml-0'} bg-gray-100 relative`}>
         {/* Hamburger Menu */}
         <button
           onClick={toggleSidebar}
@@ -173,7 +208,7 @@ const Settings: React.FC = () => {
         <h1 className="text-3xl font-bold text-center mt-4 mb-6">Dashboard Settings</h1>
         <div className="grid gap-6">
           {/* Profile Image */}
-          <div className="flex items-center relative justify-center">
+          <div className="flex items-center justify-center relative">
             <Image
               src={profileImage ? URL.createObjectURL(profileImage) : "/images/default.png"}
               alt="Profile Image"
@@ -274,22 +309,36 @@ const Settings: React.FC = () => {
             onChange={(event, value) => setSelectedUser(value)}
             renderInput={(params) => <TextField {...params} label="Search User" variant="outlined" fullWidth />}
             renderOption={(props, option) => (
-              <li {...props} style={{ fontWeight: selectedUser?.id === option.id ? 'bold' : 'normal', color: selectedUser?.id === option.id ? 'green' : 'black' }}>
+              <li {...props} style={{ fontWeight: selectedUser?.id === option.id ? 'bold' : 'normal' }}>
                 {option.name} ({option.email})
+                {employees.some(emp => emp.userId === option.id) && (
+                  <CheckCircleIcon className="w-5 h-5 text-green-500 ml-2" />
+                )}
               </li>
             )}
           />
           {selectedUser && (
             <div className="mt-4">
               <p>Selected User: {selectedUser.name} ({selectedUser.email})</p>
-              <button
-                onClick={handleAddEmployee}
-                className="mt-4 bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded flex items-center"
-                disabled={loading}
-              >
-                {loading && <CircularProgress size={20} className="mr-2" />}
-                Add Employee
-              </button>
+              {employees.some(emp => emp.userId === selectedUser.id) ? (
+                <button
+                  onClick={() => handleRemoveEmployee(selectedUser.id)}
+                  className="mt-4 bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded flex items-center"
+                  disabled={loading}
+                >
+                  {loading && <CircularProgress size={20} className="mr-2" />}
+                  Remove Employee
+                </button>
+              ) : (
+                <button
+                  onClick={handleAddEmployee}
+                  className="mt-4 bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded flex items-center"
+                  disabled={loading}
+                >
+                  {loading && <CircularProgress size={20} className="mr-2" />}
+                  Add Employee
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -304,7 +353,7 @@ const Settings: React.FC = () => {
             <ul>
               {admins.map(admin => (
                 <li key={admin.id} className="flex justify-between items-center mb-2">
-                  <span>{admin.name}</span>
+                  <span>{admin.name} ({admin.email})</span>
                   <button
                     onClick={() => handleRemoveAdmin(admin.id)}
                     className="text-red-500 hover:text-red-700 flex items-center"
@@ -319,6 +368,17 @@ const Settings: React.FC = () => {
           )}
         </div>
       </Modal>
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={6000}
+        onClose={() => setSnackbarOpen(false)}
+      >
+        <Alert onClose={() => setSnackbarOpen(false)} severity={snackbarSeverity}>
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
     </div>
   );
 };

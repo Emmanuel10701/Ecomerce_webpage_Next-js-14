@@ -13,6 +13,20 @@ enum Role {
   ADMIN
 }
 
+
+model Admin {
+  id         String @id @default(auto()) @map("_id") @db.ObjectId
+  employeeId String @unique @db.ObjectId
+  role       Role   @default(ADMIN)
+}
+model Employee {
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  name   String
+  userId String @db.ObjectId
+  role   Role   @default(STAFF)
+  user   User   @relation(fields: [userId], references: [id])
+}
+
 model User {
   id             String          @id @default(auto()) @map("_id") @db.ObjectId
   name           String?
@@ -28,27 +42,15 @@ model User {
   employees      Employee[]
 }
 
-model Admin {
-  id         String @id @default(auto()) @map("_id") @db.ObjectId
-  employeeId String @unique @db.ObjectId
-  role       Role   @default(ADMIN)
-}
 
-model Employee {
-  id     String @id @default(auto()) @map("_id") @db.ObjectId
-  name   String
-  email  String @unique
-  userId String @db.ObjectId
-  role   Role   @default(STAFF)
-  user   User   @relation(fields: [userId], references: [id])
-}
+
+
 
 model Subscriber {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   email     String   @unique
   createdAt DateTime @default(now())
-  role        Role    @default(USER)
-
+  role      Role     @default(USER)
 }
 
 model Account {
@@ -104,9 +106,9 @@ model Customer {
 
 model Order {
   id            String      @id @default(auto()) @map("_id") @db.ObjectId
-  name          String // Customer name
-  email         String // Customer email
-  address       String // Customer address
+  name          String      // Customer name
+  email         String      // Customer email
+  address       String      // Customer address
   city          String
   zip           String
   customerId    String      @db.ObjectId
