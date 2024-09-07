@@ -29,33 +29,22 @@ model User {
 }
 
 model Admin {
-  id         String   @id @default(auto()) @map("_id") @db.ObjectId
-  employeeId String   @db.ObjectId @unique
-  role       Role     @default(ADMIN)
+  id         String @id @default(auto()) @map("_id") @db.ObjectId
+  employeeId String @unique @db.ObjectId
+  role       Role   @default(ADMIN)
 }
 
 model Employee {
-  id         String   @id @default(auto()) @map("_id") @db.ObjectId
-  name       String
-  email     String   @unique
-  userId     String   @db.ObjectId
-  role       Role     @default(STAFF)
-  user       User     @relation(fields: [userId], references: [id])
-}
-
-model Customer {
-  id          String        @id @default(auto()) @map("_id") @db.ObjectId
-  name        String
-  email       String        @unique
-  phoneNumber String?
-  address     String
-  userId      String        @db.ObjectId
-  role        Role          @default(USER)
-  orders      Order[]
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  name   String
+  email  String @unique
+  userId String @db.ObjectId
+  role   Role   @default(STAFF)
+  user   User   @relation(fields: [userId], references: [id])
 }
 
 model Subscriber {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
   email     String   @unique
   createdAt DateTime @default(now())
 }
@@ -100,27 +89,41 @@ model Product {
   category    String?
 }
 
-model Order {
-  id             String   @id @default(cuid())
-  name           String
-  email          String
-  address        String
-  city           String
-  zip            String
-  items          Json
-  paymentMethod  String
-  status         String   @default("pending")
-  createdAt      DateTime @default(now())
+model Customer {
+  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  email       String  @unique
+  phoneNumber String?
+  address     String
+  userId      String  @db.ObjectId
+  role        Role    @default(USER)
+  orders      Order[] // A customer can have multiple orders
 }
 
+model Order {
+  id            String      @id @default(auto()) @map("_id") @db.ObjectId
+  name          String // Customer name
+  email         String // Customer email
+  address       String // Customer address
+  city          String
+  zip           String
+  customerId    String      @db.ObjectId
+  customer      Customer    @relation(fields: [customerId], references: [id]) // Relation to Customer
+  orderItems    OrderItem[]
+  items         Json
+  total         Float
+  paymentMethod String
+  status        String      @default("pending")
+  createdAt     DateTime    @default(now())
+}
 
 model OrderItem {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  orderId   String   @db.ObjectId
-  productId String   @db.ObjectId
+  id        String @id @default(auto()) @map("_id") @db.ObjectId
+  orderId   String @db.ObjectId
+  productId String @db.ObjectId
   quantity  Int
   price     Float
-  order     Order    @relation(fields: [orderId], references: [id])
+  order     Order  @relation(fields: [orderId], references: [id])
 }
 
 enum OrderStatus {
