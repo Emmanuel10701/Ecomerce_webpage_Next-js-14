@@ -217,7 +217,7 @@ const UsersPage: React.FC = () => {
                 value={searchTerm}
                 onChange={handleSearch}
                 placeholder="Search by name"
-                className="p-2 border border-gray-300 focus:outline-1 focus:bg-slate-100 rounded-md"
+                className="p-2 border border-gray-300 focus:outline-1 bg-slate-100 rounded-md"
               />
               <div className="md:hidden" ref={dropdownRef}>
                 <button

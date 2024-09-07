@@ -1,90 +1,95 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from 'react'; // Add useRef here
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
+import moment from 'moment';
 import 'react-toastify/dist/ReactToastify.css';
-import { FaSearch, FaSync, FaEnvelope, FaFilePdf, FaEllipsisV, FaTrash } from 'react-icons/fa';
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, TablePagination, Button } from '@mui/material';
 import LoadingSpinner from '@/components/spinner/page';
 import Sidebar from '@/components/sidebar/page';
-import ConfirmationModal from '@/components/modal/page';
-import AddEmployeeModal from '@/components/modal2/page'; // Import if you have an AddEmployeeModal component
-import moment from 'moment';
+import { FaSync, FaEnvelope, FaFilePdf, FaEllipsisV } from 'react-icons/fa';
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
 import { TDocumentDefinitions } from 'pdfmake/interfaces';
+import { useSession, signIn } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 
-
-// Define User type
 interface User {
-  id: number;
+  id: string;
   name: string;
   email: string;
-  role: 'Admin' | 'User';
-  image: string;
-  dateJoined: string;
+  createdAt: string;
+  role: string;
 }
 
-const PAGE_SIZE = 10; // Number of items per page
+const PAGE_SIZE = 10;
 
-const UserTable: React.FC = () => {
+const UsersPage: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(PAGE_SIZE);
-  const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [openModal, setOpenModal] = useState(false);
-  const [openAddModal, setOpenAddModal] = useState(false);
-  const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [loading, setLoading] = useState(false);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
   const [emailSubject, setEmailSubject] = useState('');
   const [emailBody, setEmailBody] = useState('');
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+
+  const { data: session, status } = useSession();
+
+  const handleLogin = () => {
+    router.push("/login");
+  };
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const response = await axios.get('/api/users');
-        setUsers(response.data);
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-        toast.error('Failed to fetch user data.');
-      } finally {
-        setLoading(false);
-      }
-    };
+    if (status === 'loading') {
+      setLoading(true);
+      return;
+    }
+    
+    if (!session) {
+      return;
+    }
+    
+    setLoading(false);
+  }, [session, status]);
 
-    fetchUsers();
-  }, []);
+  const fetchUsers = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get('/api/employees');
+      setUsers(response.data);
+      setTotalPages(Math.ceil(response.data.length / PAGE_SIZE));
+      setFilteredUsers(response.data.slice(0, PAGE_SIZE));
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to fetch users.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const handlePageChange = useCallback((event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => {
-    setPage(newPage);
-  }, []);
-
-  const handleChangeRowsPerPage = useCallback((event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  }, []);
-
-  const filteredUsers = users.filter(user =>
-    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  useEffect(() => {
+    if (session) {
+      fetchUsers();
+    }
+  }, [session]);
 
   const handleEmailAll = () => {
     setIsEmailModalOpen(true);
-    if (dropdownRef.current) {
-      dropdownRef.current.classList.remove('open');
-    }
+    setDropdownOpen(false);
   };
 
   const sendEmailContent = async () => {
     try {
       await axios.post('/api/send-email', {
-        emails: users.map(user => user.email).join(','),
+        emails: filteredUsers.map(user => user.email).join(','),
         subject: emailSubject,
         body: emailBody,
       });
@@ -113,15 +118,14 @@ const UserTable: React.FC = () => {
         {
           table: {
             headerRows: 1,
-            widths: ['*', '*', '*', '*', '*'],
+            widths: ['*', '*', '*', '*'],
             body: [
-              ['Name', 'Email', 'Role', 'Date Joined', 'Image'],
-              ...users.map(user => [
+              ['Name', 'Email', 'Date Joined', 'Role'],
+              ...filteredUsers.map(user => [
                 user.name,
                 user.email,
+                moment(user.createdAt).format('YYYY-MM-DD'),
                 user.role,
-                moment(user.dateJoined).format('YYYY-MM-DD'),
-                { image: user.image, width: 50, height: 50 }
               ]),
             ],
           },
@@ -152,161 +156,204 @@ const UserTable: React.FC = () => {
         font: 'Roboto',
       },
     };
-  
+
     pdfMake.vfs = pdfFonts.pdfMake.vfs;
     pdfMake.createPdf(docDefinition).download('users_report.pdf');
+    setDropdownOpen(false);
   };
 
-  const handleOpenModal = (user: User) => {
-    setUserToDelete(user);
-    setOpenModal(true);
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    fetchUsers().finally(() => setIsRefreshing(false));
   };
 
-  const handleCloseModal = () => {
-    setOpenModal(false);
-    setUserToDelete(null);
+  const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(event.target.value);
+    const filtered = users.filter(user =>
+      user.name.toLowerCase().includes(event.target.value.toLowerCase())
+    );
+    setFilteredUsers(filtered.slice(0, PAGE_SIZE));
+    setTotalPages(Math.ceil(filtered.length / PAGE_SIZE));
+    setCurrentPage(1);
   };
 
-  const handleConfirmDelete = () => {
-    if (userToDelete) {
-      setUsers(prevUsers => prevUsers.filter(user => user.id !== userToDelete.id));
-      toast.success('User deleted successfully!');
-      handleCloseModal();
-    }
+  const handlePageChange = (page: number) => {
+    const startIndex = (page - 1) * PAGE_SIZE;
+    const endIndex = page * PAGE_SIZE;
+    setFilteredUsers(users.slice(startIndex, endIndex));
+    setCurrentPage(page);
   };
 
-  const handleOpenAddModal = () => {
-    setOpenAddModal(true);
-  };
-
-  const handleCloseAddModal = () => {
-    setOpenAddModal(false);
-  };
-
-  const handleAddUser = (newUser: User) => {
-    setUsers(prevUsers => [...prevUsers, newUser]);
-    toast.success('User added successfully!');
-  };
-
-  if (loading) {
+  if (!session) {
     return (
-      <div className="flex h-screen overflow-hidden">
-        <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
-        <main className={`flex-1 p-4 ${isSidebarOpen ? 'ml-[25%]' : 'ml-0'} bg-gray-100 flex items-center justify-center`}>
-          <LoadingSpinner />
-        </main>
+      <div className="flex items-center justify-center min-h-screen bg-white">
+        <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-sm text-center">
+          <h2 className="text-2xl font-bold mb-4">Please Log In</h2>
+          <p className="mb-6">You need to log in to access this page.</p>
+          <button 
+            onClick={handleLogin} 
+            className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition duration-300"
+          >
+            Go to Login Page
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <>
       <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
-      <main className={`flex-1 p-4 ${isSidebarOpen ? 'ml-[25%]' : 'ml-0'} bg-gray-100`}>
-        <div className="mb-4 flex justify-between items-center">
-          <TextField
-            variant="outlined"
-            placeholder="Search users..."
-            size="small"
-            fullWidth
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <FaSearch className="text-gray-300 mr-2" />
-              ),
-            }}
-          />
-          <Button
-            onClick={handleOpenAddModal}
-            className="text-sm text-white ml-8 bg-slate-800 rounded-md px-2 py-1"
-          >
-            Add
-          </Button>
-        </div>
-        <TableContainer component="div" style={{ boxShadow: 'none', border: 'none' }}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell style={{ borderBottom: 'none' }} className="hidden md:table-cell text-slate-500 text-lg font-bold">Image</TableCell>
-                <TableCell style={{ borderBottom: 'none' }} className='text-slate-500 text-lg font-bold'>Name</TableCell>
-                <TableCell style={{ borderBottom: 'none' }} className='text-slate-500 text-lg font-bold'>Email</TableCell>
-                <TableCell style={{ borderBottom: 'none' }} className='text-slate-500 text-lg font-bold'>Role</TableCell>
-                <TableCell style={{ borderBottom: 'none' }} className='text-slate-500 text-lg font-bold'>Date Joined</TableCell>
-                <TableCell style={{ borderBottom: 'none' }} className='text-slate-500 text-lg font-bold'>Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {filteredUsers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell className="hidden md:table-cell">
-                    <img src={user.image} alt={user.name} className="w-10 h-10 rounded-full" />
-                  </TableCell>
-                  <TableCell>{user.name}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>{user.role}</TableCell>
-                  <TableCell>{moment(user.dateJoined).format('YYYY-MM-DD')}</TableCell>
-                  <TableCell>
-                    <Button onClick={() => handleOpenModal(user)} className="text-red-500"><FaTrash /></Button>
-                    <Button onClick={handleEmailAll} className="text-blue-500 ml-2"><FaEnvelope /></Button>
-                    <Button onClick={exportToPDF} className="text-green-500 ml-2"><FaFilePdf /></Button>
-                    <Button className="text-gray-500 ml-2" ref={dropdownRef}><FaEllipsisV /></Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-        <TablePagination
-          rowsPerPageOptions={[PAGE_SIZE]}
-          component="div"
-          count={filteredUsers.length}
-          rowsPerPage={rowsPerPage}
-          page={page}
-          onPageChange={handlePageChange}
-          onRowsPerPageChange={handleChangeRowsPerPage}
-        />
-        <ToastContainer />
-        <ConfirmationModal
-          open={openModal}
-          onClose={handleCloseModal}
-          onConfirm={handleConfirmDelete}
-          message={`Are you sure you want to delete user ${userToDelete?.name}?`}
-        />
-        <AddEmployeeModal
-          open={openAddModal}
-          onClose={handleCloseAddModal}
-          onAdd={handleAddUser}
-        />
-        <div ref={modalRef}>
-          {isEmailModalOpen && (
-            <div className="modal">
-              <h2 className="text-lg font-bold mb-2">Send Email</h2>
-              <TextField
-                label="Subject"
-                fullWidth
-                margin="normal"
-                value={emailSubject}
-                onChange={(e) => setEmailSubject(e.target.value)}
+      <div className="bg-white flex transition-all duration-300 min-h-screen p-4 md:p-8">
+        <div className="w-full flex-1">
+          <div className="mb-4 flex flex-col md:flex-row items-center justify-between">
+            <h1 className="text-2xl text-purple-400 mt-6 font-bold">Employees List</h1>
+            <div className="relative flex items-center space-x-4">
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={handleSearch}
+                placeholder="Search by name"
+                className="p-2 border border-gray-300 focus:outline-none focus:bg-slate-100 rounded-md"
               />
-              <TextField
-                label="Body"
-                fullWidth
-                margin="normal"
-                multiline
-                rows={4}
-                value={emailBody}
-                onChange={(e) => setEmailBody(e.target.value)}
-              />
-              <div className="flex justify-end mt-4">
-                <Button onClick={sendEmailContent} className="mr-2" variant="contained" color="primary">Send</Button>
-                <Button onClick={() => setIsEmailModalOpen(false)} variant="outlined" color="secondary">Cancel</Button>
+              {/* Small device dropdown */}
+              <div className="md:hidden" ref={dropdownRef}>
+                <button
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  className="bg-gray-800 text-white p-2 rounded-full hover:bg-gray-700 transition duration-300"
+                >
+                  <FaEllipsisV />
+                </button>
+                {dropdownOpen && (
+                  <div className="absolute right-0 mt-2 bg-white border rounded shadow-lg w-48">
+                    <button
+                      onClick={handleRefresh}
+                      className="w-full text-left px-4 py-2 hover:bg-blue-50 transition duration-300 flex items-center"
+                    >
+                      <FaSync className="mr-2 text-blue-500" />
+                      Refresh
+                    </button>
+                    <button
+                      onClick={handleEmailAll}
+                      className="w-full text-left px-4 py-2 hover:bg-green-50 transition duration-300 flex items-center"
+                    >
+                      <FaEnvelope className="mr-2 text-green-500" />
+                      Email All
+                    </button>
+                    <button
+                      onClick={exportToPDF}
+                      className="w-full text-left px-4 py-2 hover:bg-red-50 transition duration-300 flex items-center"
+                    >
+                      <FaFilePdf className="mr-2 text-red-500" />
+                      Export as PDF
+                    </button>
+                  </div>
+                )}
+              </div>
+              {/* Desktop buttons */}
+              <div className="hidden md:flex items-center space-x-4">
+                <button
+                  onClick={handleRefresh}
+                  className="bg-purple-300 text-white px-4 py-2 rounded hover:bg-purple-400 transition duration-300"
+                >
+                  <FaSync className="inline-block mr-2" />
+                  Refresh
+                </button>
+                <button
+                  onClick={handleEmailAll}
+                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition duration-300"
+                >
+                  <FaEnvelope className="inline-block mr-2" />
+                  Email All
+                </button>
+                <button
+                  onClick={exportToPDF}
+                  className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition duration-300"
+                >
+                  <FaFilePdf className="inline-block mr-2" />
+                  Export as PDF
+                </button>
               </div>
             </div>
+          </div>
+
+          {/* Display Users List or Loading */}
+          {loading ? (
+            <LoadingSpinner />
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredUsers.map((user) => (
+                  <div key={user.id} className="bg-white shadow-md rounded-lg p-4 border border-gray-300">
+                    <h2 className="text-xl font-semibold text-gray-700">{user.name}</h2>
+                    <p className="text-gray-500">{user.email}</p>
+                    <p className="text-gray-400 text-sm">Joined: {moment(user.createdAt).format('YYYY-MM-DD')}</p>
+                    <p className="text-gray-500">Role: {user.role}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex justify-center mt-6">
+                <button
+                  disabled={currentPage === 1}
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold py-2 px-4 rounded-l"
+                >
+                  Prev
+                </button>
+                <button
+                  disabled={currentPage === totalPages}
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold py-2 px-4 rounded-r"
+                >
+                  Next
+                </button>
+              </div>
+            </>
           )}
         </div>
-      </main>
-    </div>
+      </div>
+
+      {/* Email Modal */}
+      {isEmailModalOpen && (
+        <div className="fixed z-50 inset-0 flex items-center justify-center bg-gray-500 bg-opacity-50">
+          <div ref={modalRef} className="bg-white p-6 rounded shadow-lg w-full max-w-md">
+            <h2 className="text-xl font-bold mb-4">Send Email</h2>
+            <input
+              type="text"
+              value={emailSubject}
+              onChange={(e) => setEmailSubject(e.target.value)}
+              placeholder="Subject"
+              className="w-full mb-4 p-2 border border-gray-300 rounded focus:outline-none focus:bg-slate-100"
+            />
+            <textarea
+              value={emailBody}
+              onChange={(e) => setEmailBody(e.target.value)}
+              placeholder="Message"
+              className="w-full mb-4 p-2 border border-gray-300 rounded focus:outline-none focus:bg-slate-100"
+              rows={5}
+            ></textarea>
+            <div className="flex justify-end space-x-4">
+              <button
+                onClick={() => setIsEmailModalOpen(false)}
+                className="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400 transition duration-300"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={sendEmailContent}
+                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition duration-300"
+              >
+                Send
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <ToastContainer />
+    </>
   );
 };
 
-export default React.memo(UserTable);
+export default UsersPage;
