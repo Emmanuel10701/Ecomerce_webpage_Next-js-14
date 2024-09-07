@@ -1,26 +1,29 @@
-"use client";
+'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import LoadingSpinner from '@/components/spinner/page'; 
-import Sidebar from '@/components/sidebar/page'; // Import Sidebar
+import Sidebar from '@/components/sidebar/page';
 import moment from 'moment';
-import { FaSync, FaEnvelope, FaFilePdf, FaEllipsisV } from 'react-icons/fa'; // Import additional icons
-import { useRouter } from 'next/navigation';
+import { FaSync, FaEnvelope, FaFilePdf, FaEllipsisV } from 'react-icons/fa';
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
-import { TDocumentDefinitions } from 'pdfmake/interfaces'; // Import TDocumentDefinitions
+import { TDocumentDefinitions } from 'pdfmake/interfaces';
+import { useSession, signIn } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 
-// Define the User type
+// Define the User type with additional fields
 interface User {
   id: number;
+  name: string;
   email: string;
-  dateAdded: string; // Assuming date is in ISO format
+  dateJoined: string; // Assuming date is in ISO format
+  role: string; // Role of the user (e.g., 'subscriber', 'admin')
 }
 
-const PAGE_SIZE = 10; // Number of items per page
+const PAGE_SIZE = 10;
 
 const SubscribersPage: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -28,22 +31,42 @@ const SubscribersPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [loading, setLoading] = useState(false); // Add loading state
+  const [loading, setLoading] = useState(false);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
   const [emailSubject, setEmailSubject] = useState('');
   const [emailBody, setEmailBody] = useState('');
-  const [dropdownOpen, setDropdownOpen] = useState(false); // State for dropdown menu
-  const dropdownRef = useRef<HTMLDivElement>(null); // Ref for dropdown
-  const modalRef = useRef<HTMLDivElement>(null); // Ref for modal
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
-  // Function to fetch users
+  // Authentication
+  const { data: session, status } = useSession();
+
+  const handleLogin = () => {
+    signIn();
+  };
+
+  useEffect(() => {
+    if (status === 'loading') {
+      setLoading(true);
+      return;
+    }
+    
+    if (!session) {
+      return;
+    }
+    
+    setLoading(false);
+  }, [session, status]);
+
+  // Fetch users
   const fetchUsers = async (page: number) => {
     try {
       setLoading(true);
-      const response = await axios.get(`/api/subscribers?page=${page}&limit=${PAGE_SIZE}`); // Update with your API endpoint
-      setUsers(response.data.users); // Adjust based on the response structure
-      setTotalUsers(response.data.total); // Assuming the API returns total user count
+      const response = await axios.get(`/api/subscribers?page=${page}&limit=${PAGE_SIZE}`);
+      setUsers(response.data.users);
+      setTotalUsers(response.data.total);
       setLoading(false);
     } catch (error) {
       console.error(error);
@@ -53,32 +76,17 @@ const SubscribersPage: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchUsers(currentPage);
-  }, [currentPage]);
+    if (session) {
+      fetchUsers(currentPage);
+    }
+  }, [currentPage, session]);
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setDropdownOpen(false);
-      }
-      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
-        setIsEmailModalOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
-
-  // Function to handle email button click
+  // Handle email modal and actions
   const handleEmailAll = () => {
     setIsEmailModalOpen(true);
     setDropdownOpen(false);
   };
 
-  // Function to send email
   const sendEmailContent = async () => {
     try {
       await axios.post('/api/send-email', {
@@ -96,7 +104,6 @@ const SubscribersPage: React.FC = () => {
     }
   };
 
-  // Function to generate and download PDF
   const exportToPDF = () => {
     const docDefinition: TDocumentDefinitions = {
       content: [
@@ -112,12 +119,14 @@ const SubscribersPage: React.FC = () => {
         {
           table: {
             headerRows: 1,
-            widths: ['*', '*'],
+            widths: ['*', '*', '*', '*'],
             body: [
-              ['Email', 'Date Added'],
+              ['Name', 'Email', 'Date Joined', 'Role'],
               ...users.map(user => [
+                user.name,
                 user.email,
-                moment(user.dateAdded).format('YYYY-MM-DD'),
+                moment(user.dateJoined).format('YYYY-MM-DD'),
+                user.role,
               ]),
             ],
           },
@@ -128,47 +137,62 @@ const SubscribersPage: React.FC = () => {
         header: {
           fontSize: 22,
           bold: true,
-          color: '#00796b', // Teal color
+          color: '#00796b',
           margin: [0, 0, 0, 10],
         },
         intro: {
           fontSize: 12,
           margin: [0, 0, 0, 20],
-          color: '#555', // Dark gray
+          color: '#555',
         },
         subheader: {
           fontSize: 18,
           bold: true,
-          color: '#004d40', // Darker teal color
+          color: '#004d40',
           margin: [0, 20, 0, 10],
         },
       },
-      pageMargins: [40, 60, 40, 60], // Custom margins for better layout
+      pageMargins: [40, 60, 40, 60],
       defaultStyle: {
-        font: 'Roboto', // Ensure this is available or use a standard font
+        font: 'Roboto',
       },
     };
-  
+
     pdfMake.vfs = pdfFonts.pdfMake.vfs;
     pdfMake.createPdf(docDefinition).download('subscribers_report.pdf');
     setDropdownOpen(false);
   };
 
-  // Handle page change
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
 
-  // Handle refresh
   const handleRefresh = () => {
     setIsRefreshing(true);
-    setLoading(true); // Set loading to true when refreshing
+    setLoading(true);
     setTimeout(() => {
       fetchUsers(currentPage);
       setIsRefreshing(false);
-      setLoading(false); // Reset loading after refreshing
+      setLoading(false);
     }, 1000);
   };
+
+  if (!session) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-100">
+        <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-sm text-center">
+          <h2 className="text-2xl font-bold mb-4">Please Log In</h2>
+          <p className="mb-6">You need to log in or register to access this page.</p>
+          <button 
+            onClick={handleLogin} 
+            className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition duration-300"
+          >
+            Go to Login Page
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -178,7 +202,6 @@ const SubscribersPage: React.FC = () => {
           <div className="mb-4 flex flex-col md:flex-row items-center justify-between">
             <h1 className="text-2xl text-purple-400 font-bold">Subscribers List</h1>
             <div className="relative flex items-center space-x-4 md:space-x-4">
-              {/* Dropdown for small screens */}
               <div className="md:hidden" ref={dropdownRef}>
                 <button
                   onClick={() => setDropdownOpen(!dropdownOpen)}
@@ -212,7 +235,6 @@ const SubscribersPage: React.FC = () => {
                   </div>
                 )}
               </div>
-              {/* Buttons for larger screens */}
               <div className="hidden md:flex items-center space-x-4">
                 <button
                   onClick={handleRefresh}
@@ -245,28 +267,31 @@ const SubscribersPage: React.FC = () => {
               <table className="w-full border-collapse border border-gray-200">
                 <thead>
                   <tr className="bg-gray-100 dark:bg-gray-700">
+                    <th className="border border-gray-300 p-2">Name</th>
                     <th className="border border-gray-300 p-2">Email</th>
-                    <th className="border border-gray-300 p-2">Date Added</th>
+                    <th className="border border-gray-300 p-2">Date Joined</th>
+                    <th className="border border-gray-300 p-2">Role</th>
                   </tr>
                 </thead>
                 <tbody>
                   {users.length === 0 ? (
                     <tr>
-                      <td colSpan={2} className="text-center p-4">No subscribers found</td>
+                      <td colSpan={4} className="text-center p-4">No subscribers found</td>
                     </tr>
                   ) : (
                     users.map(user => (
                       <tr key={user.id}>
+                        <td className="border border-gray-300 p-2">{user.name}</td>
                         <td className="border border-gray-300 p-2">{user.email}</td>
                         <td className="border border-gray-300 p-2">
-                          {moment(user.dateAdded).fromNow()}
+                          {moment(user.dateJoined).fromNow()}
                         </td>
+                        <td className="border border-gray-300 p-2">{user.role}</td>
                       </tr>
                     ))
                   )}
                 </tbody>
               </table>
-              {/* Pagination Controls */}
               <div className="flex justify-between items-center mt-4">
                 <button
                   onClick={() => handlePageChange(currentPage - 1)}
@@ -289,7 +314,6 @@ const SubscribersPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Email Modal */}
       {isEmailModalOpen && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-gray-800 bg-opacity-50" ref={modalRef}>
           <div className="bg-white p-6 rounded-lg shadow-lg max-w-lg w-full">

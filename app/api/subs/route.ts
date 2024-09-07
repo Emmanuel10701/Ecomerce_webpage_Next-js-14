@@ -37,7 +37,6 @@ export async function POST(req: NextRequest) {
         message: error.message,
         stack: error.stack,
         name: error.name,
-        // Optionally log more context if available
       });
       return NextResponse.json(
         { message: 'Server error', error: error.message, details: error.stack },
@@ -62,9 +61,10 @@ export async function GET() {
         id: true,
         email: true,
         createdAt: true,
-        role: true,
+        role: true, // Ensure the role field is selected
       },
     });
+
     console.log('Retrieved subscribers:', subscribers);
 
     return NextResponse.json(subscribers);
@@ -75,7 +75,6 @@ export async function GET() {
         message: error.message,
         stack: error.stack,
         name: error.name,
-        // Optionally log more context if available
       });
       return NextResponse.json(
         { error: 'Database operation failed', details: error.message },
