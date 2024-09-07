@@ -13,12 +13,15 @@ enum Role {
   ADMIN
 }
 
-
 model Admin {
-  id         String @id @default(auto()) @map("_id") @db.ObjectId
-  employeeId String @unique @db.ObjectId
-  role       Role   @default(ADMIN)
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  name   String
+  userId String @db.ObjectId
+  role   Role   @default(ADMIN)
+  user   User   @relation(fields: [userId], references: [id])
 }
+
+
 model Employee {
   id     String @id @default(auto()) @map("_id") @db.ObjectId
   name   String
@@ -40,6 +43,7 @@ model User {
   passwordResets PasswordReset[]
   role           Role            @default(STAFF)
   employees      Employee[]
+  admin      Admin[]
 }
 
 
@@ -134,4 +138,12 @@ enum OrderStatus {
   DELIVERED
   PENDING
   PAID
+}
+model Event {
+  id        String @id @default(auto()) @map("_id") @db.ObjectId
+  title      String   // Title of the event
+  date       DateTime // Date of the event
+  color      String   // Color associated with the event
+  createdAt  DateTime @default(now()) // Timestamp for when the event was created
+  updatedAt  DateTime @updatedAt         // Timestamp for when the event was last updated
 }

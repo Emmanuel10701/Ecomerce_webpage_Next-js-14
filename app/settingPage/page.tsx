@@ -150,7 +150,7 @@ const Settings: React.FC = () => {
   const handleRemoveAdmin = async (adminId: number) => {
     setLoading(true);
     try {
-      await axios.post('/api/admins/remove', { adminId });
+      await axios.post('/api/admins', { adminId });
       setSnackbarMessage('Admin removed successfully');
       setSnackbarSeverity('success');
     } catch (err) {

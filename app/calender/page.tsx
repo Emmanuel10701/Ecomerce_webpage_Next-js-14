@@ -6,7 +6,7 @@ import { useSession } from 'next-auth/react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import { Button, Dialog, TextField, IconButton, Typography, CircularProgress, MenuItem, Select, FormControl, InputLabel, Drawer, Badge } from '@mui/material';
+import { Dialog, Button, IconButton, CircularProgress, Drawer, Badge } from '@mui/material';
 import { AiOutlineClose, AiOutlineBell } from 'react-icons/ai';
 import Sidebar from '@/components/sidebar/page';
 import LoadingSpinner from '@/components/spinner/page';
@@ -39,39 +39,32 @@ const CalendarPage: React.FC = () => {
   const [openEventDialog, setOpenEventDialog] = useState(false);
   const [eventTitle, setEventTitle] = useState('');
   const [eventDate, setEventDate] = useState('');
-  const [recipientType, setRecipientType] = useState('employees');
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [loading, setLoading] = useState(false);
   const [isEventsDrawerOpen, setIsEventsDrawerOpen] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
-  const [totalCount, setTotalCount] = useState(0);
+  const [showAccessDenied, setShowAccessDenied] = useState(false);
 
   const router = useRouter();
 
   useEffect(() => {
     if (session) {
-      const storedEvents = localStorage.getItem('events');
-      const storedNotifications = localStorage.getItem('notifications');
-      if (storedEvents) {
-        setEvents(JSON.parse(storedEvents));
-      }
-      if (storedNotifications) {
-        const notifications = JSON.parse(storedNotifications);
-        setNotifications(notifications);
-        setNotificationCount(notifications.length);
-      }
+      const fetchEvents = async () => {
+        const response = await fetch('/api/events');
+        const data = await response.json();
+        setEvents(data);
+      };
+      fetchEvents();
     }
   }, [session]);
 
   useEffect(() => {
-    if (events.length > 0) {
-      localStorage.setItem('events', JSON.stringify(events));
-    }
     if (notifications.length > 0) {
       localStorage.setItem('notifications', JSON.stringify(notifications));
+      setNotificationCount(notifications.length);
     }
-  }, [events, notifications]);
+  }, [notifications]);
 
   const handleDateClick = (arg: any) => {
     const today = new Date().toISOString().split('T')[0];
@@ -84,19 +77,28 @@ const CalendarPage: React.FC = () => {
 
   const handleAddEvent = async () => {
     if (eventTitle && eventDate) {
-      setLoading(true);
-      try {
-        const newEvent: Event = { title: eventTitle, date: eventDate, color: 'green', id: Date.now().toString() };
-        setEvents([...events, newEvent]);
-        toast.success('Event added successfully!');
-        setOpenEventDialog(false);
-        setEventTitle('');
-        setEventDate('');
-        setRecipientType('employees');
-      } catch (error) {
-        toast.error('Failed to add event.');
-      } finally {
-        setLoading(false);
+      if ((session?.user as User)?.role === 'admin') {
+        setLoading(true);
+        try {
+          const newEvent: Event = { title: eventTitle, date: eventDate, color: 'green', id: Date.now().toString() };
+          const response = await fetch('/api/events', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newEvent),
+          });
+          const data = await response.json();
+          setEvents([...events, data]);
+          toast.success('Event added successfully!');
+          setOpenEventDialog(false);
+          setEventTitle('');
+          setEventDate('');
+        } catch (error) {
+          toast.error('Failed to add event.');
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        setShowAccessDenied(true);
       }
     } else {
       toast.error('Please fill out all fields.');
@@ -105,33 +107,52 @@ const CalendarPage: React.FC = () => {
 
   const handleUpdateEvent = async () => {
     if (eventTitle && eventDate && selectedEventId) {
-      setLoading(true);
-      try {
-        const updatedEvents = events.map(event =>
-          event.id === selectedEventId
-            ? { ...event, title: eventTitle, date: eventDate, color: 'green' }
-            : event
-        );
-        setEvents(updatedEvents);
-        toast.success('Event updated successfully!');
-        setOpenEventDialog(false);
-        setEventTitle('');
-        setEventDate('');
-        setRecipientType('employees');
-        setSelectedEventId(null);
-      } catch (error) {
-        toast.error('Failed to update event.');
-      } finally {
-        setLoading(false);
+      if ((session?.user as User)?.role === 'admin') {
+        setLoading(true);
+        try {
+          const updatedEvent: Event = { title: eventTitle, date: eventDate, color: 'green', id: selectedEventId };
+          const response = await fetch(`/api/events/${selectedEventId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updatedEvent),
+          });
+          const data = await response.json();
+          setEvents(events.map(event => event.id === selectedEventId ? data : event));
+          toast.success('Event updated successfully!');
+          setOpenEventDialog(false);
+          setEventTitle('');
+          setEventDate('');
+          setSelectedEventId(null);
+        } catch (error) {
+          toast.error('Failed to update event.');
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        setShowAccessDenied(true);
       }
     } else {
       toast.error('Please fill out all fields.');
     }
   };
 
-  const handleDeleteEvent = (eventId: string) => {
-    setEvents(events.filter(event => event.id !== eventId));
-    toast.success('Event deleted successfully!');
+  const handleDeleteEvent = async (eventId: string) => {
+    if ((session?.user as User)?.role === 'admin') {
+      setLoading(true);
+      try {
+        await fetch(`/api/events/${eventId}`, {
+          method: 'DELETE',
+        });
+        setEvents(events.filter(event => event.id !== eventId));
+        toast.success('Event deleted successfully!');
+      } catch (error) {
+        toast.error('Failed to delete event.');
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      setShowAccessDenied(true);
+    }
   };
 
   const handleEventClick = (arg: any) => {
@@ -198,16 +219,13 @@ const CalendarPage: React.FC = () => {
     );
   }
 
-
   return (
     <div className="flex h-screen overflow-hidden">
       <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
 
       <main className={`flex-1 p-4 ${isSidebarOpen ? 'ml-[24%] w-[75%]' : 'ml-0 w-full'} bg-blue-400`}>
         <div className="mb-4 flex justify-between items-center">
-          <Typography variant="h4" component="h1" className="font-semibold text-white">
-            Calendar
-          </Typography>
+          <h1 className="text-2xl font-semibold text-white">Calendar</h1>
           <Button
             onClick={() => handleNavigation("/analytics")}
             className="text-sm text-white bg-blue-600 rounded-md px-4 py-2 hover:bg-blue-700"
@@ -218,11 +236,10 @@ const CalendarPage: React.FC = () => {
             color="inherit"
             onClick={handleNotificationClick}
           >
-            <Badge badgeContent={totalCount} color="error">
+            <Badge badgeContent={notificationCount} color="error">
               <AiOutlineBell size={32} className="text-slate-100" />
             </Badge>
           </IconButton>
-
         </div>
         
         <div className="bg-white p-4 rounded-lg shadow-md">
@@ -264,43 +281,34 @@ const CalendarPage: React.FC = () => {
             >
               <AiOutlineClose size={24} />
             </IconButton>
-            <Typography variant="h6" className="mb-4 text-orange-600">{selectedEventId ? 'Edit Event' : 'Add Event'}</Typography>
-            <TextField
-              label="Event Title"
-              value={eventTitle}
-              onChange={(e) => setEventTitle(e.target.value)}
-              fullWidth
-              margin="normal"
-              disabled={!!selectedEventId}
-            />
-            <TextField
-              label="Event Date"
-              type="date"
-              value={eventDate}
-              onChange={(e) => setEventDate(e.target.value)}
-              fullWidth
-              margin="normal"
-              InputLabelProps={{ shrink: true }}
-              disabled={!!selectedEventId}
-            />
-            <FormControl fullWidth margin="normal">
-              <InputLabel>Recipient Type</InputLabel>
-              <Select
-                value={recipientType}
-                onChange={(e) => setRecipientType(e.target.value)}
-                label="Recipient Type"
+            <h2 className="text-xl font-semibold mb-4 text-orange-600">
+              {selectedEventId ? 'Edit Event' : 'Add Event'}
+            </h2>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700">Event Title</label>
+              <input
+                type="text"
+                value={eventTitle}
+                onChange={(e) => setEventTitle(e.target.value)}
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
                 disabled={!!selectedEventId}
-              >
-                <MenuItem value="employees">Employees</MenuItem>
-                <MenuItem value="users">Users</MenuItem>
-              </Select>
-            </FormControl>
+              />
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700">Event Date</label>
+              <input
+                type="date"
+                value={eventDate}
+                onChange={(e) => setEventDate(e.target.value)}
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                disabled={!!selectedEventId}
+              />
+            </div>
             <div className="mt-4 flex justify-end">
               {selectedEventId ? (
                 <Button
                   onClick={handleUpdateEvent}
-                  color="primary"
-                  variant="contained"
+                  className="bg-blue-500 text-white px-4 py-2 rounded-md"
                   disabled={loading}
                 >
                   {loading ? <CircularProgress size={24} /> : 'Update Event'}
@@ -308,8 +316,7 @@ const CalendarPage: React.FC = () => {
               ) : (
                 <Button
                   onClick={handleAddEvent}
-                  color="primary"
-                  variant="contained"
+                  className="bg-blue-500 text-white px-4 py-2 rounded-md"
                   disabled={loading}
                 >
                   {loading ? <CircularProgress size={24} /> : 'Add Event'}
@@ -317,9 +324,7 @@ const CalendarPage: React.FC = () => {
               )}
               <Button
                 onClick={() => setOpenEventDialog(false)}
-                color="secondary"
-                variant="outlined"
-                className="ml-2"
+                className="ml-2 bg-gray-300 text-black px-4 py-2 rounded-md"
               >
                 Cancel
               </Button>
@@ -340,7 +345,7 @@ const CalendarPage: React.FC = () => {
         >
           <div className="p-4 h-full bg-slate-100 flex flex-col">
             <div className="flex justify-between items-center mb-4">
-              <Typography variant="h6" className="text-blue-600">All Events</Typography>
+              <h2 className="text-xl font-semibold text-blue-600">All Events</h2>
               <IconButton
                 edge="end"
                 color="inherit"
@@ -350,15 +355,15 @@ const CalendarPage: React.FC = () => {
                 <AiOutlineClose size={24} />
               </IconButton>
             </div>
-            <Typography variant="body2" className="mb-4 text-gray-700">
+            <p className="mb-4 text-gray-700">
               Here is the list of all upcoming events. You can also delete events directly from this list.
-            </Typography>
+            </p>
             <ul className="flex-1 overflow-y-auto">
               {events.map(event => (
                 <li key={event.id} className="mb-2 flex justify-between items-center">
-                  <Typography variant="body1" style={{ color: event.color }}>
+                  <span style={{ color: event.color }}>
                     {event.title} - {event.date}
-                  </Typography>
+                  </span>
                   <Button
                     onClick={() => {
                       handleDeleteEvent(event.id || '');
@@ -375,6 +380,19 @@ const CalendarPage: React.FC = () => {
             </ul>
           </div>
         </Drawer>
+
+        <Dialog open={showAccessDenied} onClose={() => setShowAccessDenied(false)}>
+          <div className="p-4">
+            <h2 className="text-xl font-semibold mb-4 text-red-600">Access Denied</h2>
+            <p className="mb-4">You are not permitted to perform this operation.</p>
+            <Button
+              onClick={() => setShowAccessDenied(false)}
+              className="bg-blue-500 text-white px-4 py-2 rounded-md"
+            >
+              OK
+            </Button>
+          </div>
+        </Dialog>
 
         <ToastContainer />
       </main>

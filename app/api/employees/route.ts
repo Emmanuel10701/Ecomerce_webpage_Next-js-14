@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
     if (id) {
       // Fetch a single employee by ID
       const employee = await prisma.employee.findUnique({
-        where: { id: String(id) },
+        where: { id:String(id) },
         include: {
           user: { select: { email: true } },
         },
