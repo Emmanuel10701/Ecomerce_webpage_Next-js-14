@@ -2,11 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { useCart } from '../../context/page'; // Adjust to your actual path
-import {  useElements, useStripe } from '@stripe/react-stripe-js';
+import { useElements, useStripe } from '@stripe/react-stripe-js';
 import Image from 'next/image';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
-
 import CheckoutCard from '@/components/cardCheckout/page'; // Import the CheckoutCard component
 
 // Make sure to replace this with your own Stripe public key
@@ -30,17 +29,24 @@ const CheckoutPage: React.FC = () => {
   const total = state.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   useEffect(() => {
-    const fetchOrderDetails = async () => {
+    // Assuming you have userId or other identifier to fetch customer details
+    const fetchCustomerDetails = async () => {
       try {
-        const response = await fetch('/api/get-order-details'); // Adjust the endpoint as needed
-        const orderDetails = await response.json();
+        const response = await fetch('/api/castomers', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ userId: 'some-user-id' }) // Replace with actual userId or relevant data
+        });
+        const data = await response.json();
         
         setBillingInfo({
-          name: orderDetails.name,
-          email: orderDetails.email,
-          address: orderDetails.address,
-          city: orderDetails.city,
-          zip: orderDetails.zip,
+          name: data.name || '',
+          email: data.email || '',
+          address: data.address || '',
+          city: data.city || '',
+          zip: data.zip || '',
         });
 
         setMpesaDetails(prevState => ({
@@ -48,11 +54,11 @@ const CheckoutPage: React.FC = () => {
           amount: total,
         }));
       } catch (error) {
-        console.error('Error fetching order details:', error);
+        console.error('Error fetching customer details:', error);
       }
     };
 
-    fetchOrderDetails();
+    fetchCustomerDetails();
   }, [total]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -213,7 +219,7 @@ const CheckoutPage: React.FC = () => {
                   </div>
                 </label>
                 {/* M-Pesa Payment Option */}
-                <label className={`flex items-center p-4 rounded-lg border cursor-pointer transition-transform ${paymentMethod === 'mpesa' ? 'border-green-500 bg-green-50' : 'border-gray-300'} hover:scale-105`} htmlFor="mpesa">
+                <label className={`flex items-center p-4 rounded-lg border cursor-pointer transition-transform ${paymentMethod === 'mpesa' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'} hover:scale-105`} htmlFor="mpesa">
                   <input
                     type="radio"
                     id="mpesa"
@@ -224,7 +230,9 @@ const CheckoutPage: React.FC = () => {
                     className="sr-only"
                   />
                   <div className="flex items-center gap-3">
-                    <Image src="/assets/mpesa.png" alt="M-Pesa Logo" width={30} height={30} />
+                    <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2zM2 6h20M6 2v20"></path>
+                    </svg>
                     <span className="text-lg font-semibold text-gray-800">M-Pesa</span>
                   </div>
                 </label>
@@ -233,36 +241,26 @@ const CheckoutPage: React.FC = () => {
 
             {/* M-Pesa Details */}
             {paymentMethod === 'mpesa' && (
-              <div className="bg-white p-6 rounded-lg shadow-lg mt-6">
-                <h2 className="text-2xl font-semibold mb-4 text-gray-800">M-Pesa Payment Information</h2>
-                <div className="flex flex-col gap-4">
-                  <input
-                    type="text"
-                    name="phoneNumber"
-                    value={mpesaDetails.phoneNumber}
-                    onChange={handleMpesaChange}
-                    placeholder="M-Pesa Phone Number"
-                    className="p-3 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
-                  <input
-                    type="number"
-                    name="amount"
-                    value={total.toFixed(2)}
-                    onChange={handleMpesaChange}
-                    placeholder="Amount"
-                    className="p-3 border border-gray-300 rounded-lg text-gray-800 bg-gray-100 cursor-not-allowed"
-                    required
-                    disabled
-                  />
-                </div>
+              <div className="mpesa-details mt-4">
+                <h2 className="text-2xl font-semibold text-blue-600 mb-4">M-Pesa Details</h2>
+                <input
+                  type="text"
+                  name="phoneNumber"
+                  value={mpesaDetails.phoneNumber}
+                  onChange={handleMpesaChange}
+                  placeholder="Phone Number"
+                  className="p-3 border border-gray-300 text-slate-500 rounded-lg shadow-sm mb-4"
+                  required
+                />
               </div>
             )}
 
-            {/* Include the CheckoutCard component */}
-            {paymentMethod === 'card' && (
-              <CheckoutCard paymentMethod={paymentMethod} />
-            )}
+            <button
+              type="submit"
+              className="w-full bg-blue-600 text-white p-3 rounded-lg font-semibold mt-6 hover:bg-blue-700"
+            >
+              {paymentMethod === 'card' ? 'Pay with Card' : 'Pay with M-Pesa'}
+            </button>
           </form>
         </div>
       </div>
@@ -270,11 +268,4 @@ const CheckoutPage: React.FC = () => {
   );
 };
 
-// Wrap your component with Stripe Elements
-const WrappedCheckoutPage: React.FC = () => (
-  <Elements stripe={stripePromise}>
-    <CheckoutPage />
-  </Elements>
-);
-
-export default WrappedCheckoutPage;
+export default CheckoutPage;

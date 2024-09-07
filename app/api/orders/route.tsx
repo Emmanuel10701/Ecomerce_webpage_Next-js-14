@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../../../libs/prismadb'; // Import from the correct path
 
-const prisma = new PrismaClient();
-
+// GET request to fetch all orders or a single order by ID
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const id = url.searchParams.get('id');
@@ -13,8 +12,8 @@ export async function GET(req: NextRequest) {
       const order = await prisma.order.findUnique({
         where: { id },
         include: {
-          orderItems: true, // Optionally include order items
-          customer: true, // Optionally include customer
+          orderItems: true, // Include related orderItems if needed
+          customer: true,   // Include related customer if needed
         },
       });
       if (order) {
@@ -31,8 +30,8 @@ export async function GET(req: NextRequest) {
     try {
       const orders = await prisma.order.findMany({
         include: {
-          orderItems: true, // Optionally include order items
-          customer: true, // Optionally include customer
+          orderItems: true, // Include related orderItems if needed
+          customer: true,   // Include related customer if needed
         },
       });
       return NextResponse.json(orders);
@@ -43,14 +42,17 @@ export async function GET(req: NextRequest) {
   }
 }
 
+// POST request to create a new order
+
+// POST request to create a new order
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, email, address, city, zip, customerId, items, total, paymentMethod } = body;
+    const { name, email, address, city, zip, customerId, items, total, paymentMethod, status } = body;
 
     // Validate required fields
-    if (!name || !email || !address || !city || !zip || !customerId || !items || !total || !paymentMethod) {
-      return new NextResponse(JSON.stringify({ error: 'All fields are required' }), { status: 400 });
+    if (!name || !email || !address || !customerId || !items || typeof total !== 'number' || !paymentMethod) {
+      return new NextResponse(JSON.stringify({ error: 'Name, email, address, customerId, items, total, and paymentMethod are required' }), { status: 400 });
     }
 
     // Create a new order
@@ -59,13 +61,13 @@ export async function POST(req: NextRequest) {
         name,
         email,
         address,
-        city,
-        zip,
+        city: city || '',  // Provide default value if city is not provided
+        zip: zip || '',    // Provide default value if zip is not provided
         customerId,
-        items,
+        items,             // Ensure items match the expected JSON structure
         total,
         paymentMethod,
-        status: 'pending', // Default status
+        status: status || 'PENDING', // Default to 'PENDING' if status is not provided
       },
     });
 
@@ -76,6 +78,8 @@ export async function POST(req: NextRequest) {
   }
 }
 
+
+// DELETE request to remove an order by ID
 export async function DELETE(req: NextRequest) {
   try {
     const url = new URL(req.url);
@@ -92,7 +96,7 @@ export async function DELETE(req: NextRequest) {
 
     return NextResponse.json(deletedOrder, { status: 200 });
   } catch (error: any) {
-    if (error.code === 'P2025') {
+    if (error.code === 'P2025') { // Prisma error code for record not found
       return new NextResponse(JSON.stringify({ error: 'Order not found' }), { status: 404 });
     }
     console.error('Error deleting order:', error);
