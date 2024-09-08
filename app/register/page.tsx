@@ -22,6 +22,7 @@ const Register = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isValid, setIsValid] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   // Validate form fields
@@ -35,14 +36,22 @@ const Register = () => {
     if (!isValid) return;
   
     setIsSubmitting(true);
-  
+    setError(null); // Clear previous error message
+
     try {
       const response = await axios.post('/api/register', data);
       if (response.status === 200) {
         toast.success('User registered successfully!');
         router.push('/login');
       } else {
-        toast.error(response.data.error || 'Registration failed. Please try again.');
+        // Handle specific errors from the server
+        const responseData = response.data;
+        if (responseData.error) {
+          setError(responseData.error);
+          toast.error(responseData.error);
+        } else {
+          toast.error('Registration failed. Please try again.');
+        }
       }
     } catch (error) {
       console.error('Error during registration:', error);
@@ -51,7 +60,6 @@ const Register = () => {
       setIsSubmitting(false);
     }
   };
-  
 
   return (
     <section
@@ -63,6 +71,10 @@ const Register = () => {
         onSubmit={handleSubmit}
       >
         <h1 className="mb-6 text-4xl font-extrabold text-blue-800 text-center">Create Account</h1>
+
+        {error && (
+          <div className="text-red-500 mb-4 text-center">{error}</div>
+        )}
 
         <label className="w-full text-sm font-medium">Name:</label>
         <input

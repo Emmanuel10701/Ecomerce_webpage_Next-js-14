@@ -1,4 +1,4 @@
-import bcrypt from 'bcrypt'; // or 'bcryptjs' if using bcryptjs
+import bcrypt from 'bcrypt';
 import prisma from '../../../libs/prismadb';
 import { NextResponse } from 'next/server';
 import { NextRequest } from 'next/server';
@@ -17,9 +17,10 @@ export async function POST(request: NextRequest) {
     const body: RegisterRequestBody = await request.json();
     const { name, email, password } = body;
 
+    // Check for missing fields
     if (!name || !email || !password) {
       return new NextResponse(
-        JSON.stringify({ error: 'Missing fields' }),
+        JSON.stringify({ error: 'All fields are required.' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
@@ -28,25 +29,28 @@ export async function POST(request: NextRequest) {
     if (!PASSWORD_REGEX.test(password)) {
       return new NextResponse(
         JSON.stringify({
-          error: 'Password must be at least 8 characters long, include an uppercase letter, a number, and a special character.',
+          error: 'Password must be at least 8 characters long and include an uppercase letter, a number, and a special character.',
         }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
+    // Check for existing user
     const existingUser = await prisma.user.findUnique({
       where: { email },
     });
 
     if (existingUser) {
       return new NextResponse(
-        JSON.stringify({ error: 'Email already exists' }),
+        JSON.stringify({ error: 'An account with this email already exists.' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
+    // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Create the new user
     const newUser = await prisma.user.create({
       data: {
         name,
@@ -55,11 +59,12 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(newUser);
+    // Respond with success
+    return NextResponse.json({ success: true, data: newUser });
   } catch (error) {
     console.error('Error during registration:', error);
     return new NextResponse(
-      JSON.stringify({ error: 'Internal Server Error' }),
+      JSON.stringify({ error: 'Internal Server Error. Please try again later.' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
@@ -69,11 +74,11 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   try {
     const users = await prisma.user.findMany();
-    return NextResponse.json(users);
+    return NextResponse.json({ success: true, data: users });
   } catch (error) {
     console.error('Error retrieving users:', error);
     return new NextResponse(
-      JSON.stringify({ error: 'Internal Server Error' }),
+      JSON.stringify({ error: 'Internal Server Error. Please try again later.' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }

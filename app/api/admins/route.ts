@@ -88,25 +88,3 @@ export async function GET(req: NextRequest) {
     return new NextResponse(JSON.stringify({ error: 'Error fetching admins', details: error.message }), { status: 500 });
   }
 }
-
-// Handle DELETE request
-export async function DELETE(req: NextRequest) {
-  try {
-    const { searchParams } = new URL(req.url);
-    const id = searchParams.get('id');
-
-    if (!id) {
-      return new NextResponse(JSON.stringify({ error: 'ID is required' }), { status: 400 });
-    }
-
-    // Delete admin by ID
-    const deletedAdmin = await prisma.admin.delete({
-      where: { id: String(id) },
-    });
-
-    return NextResponse.json(deletedAdmin);
-  } catch (error: any) {
-    console.error('Error deleting admin:', error);
-    return new NextResponse(JSON.stringify({ error: 'Error deleting admin', details: error.message }), { status: 500 });
-  }
-}

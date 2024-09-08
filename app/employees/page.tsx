@@ -7,7 +7,7 @@ import moment from 'moment';
 import 'react-toastify/dist/ReactToastify.css';
 import LoadingSpinner from '@/components/spinner/page';
 import Sidebar from '@/components/sidebar/page';
-import { FaSync, FaEnvelope, FaFilePdf, FaEllipsisV } from 'react-icons/fa';
+import { FaSync, FaEnvelope, FaFilePdf, FaEllipsisV, FaTrash } from 'react-icons/fa';
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
 import { TDocumentDefinitions } from 'pdfmake/interfaces';
@@ -187,6 +187,22 @@ const EmployeesPage: React.FC = () => {
     setCurrentPage(page);
   };
 
+  // Remove employee
+  const handleRemoveEmployee = async (userId: string) => {
+    setLoading(true);
+    try {
+      await axios.delete(`/api/employees/${userId}`);
+      toast.success('Employee removed successfully');
+      // Refresh the list after removal
+      fetchEmployees();
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to remove employee');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!session) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-100">
@@ -288,12 +304,13 @@ const EmployeesPage: React.FC = () => {
                     <th className="border-b border-gray-300 p-3 text-left text-sm font-semibold">Email</th>
                     <th className="border-b border-gray-300 p-3 text-left text-sm font-semibold">Date Joined</th>
                     <th className="border-b border-gray-300 p-3 text-left text-sm font-semibold">Role</th>
+                    <th className="border-b border-gray-300 p-3 text-left text-sm font-semibold">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredEmployees.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="text-center py-4 text-gray-500">No Employees found</td>
+                      <td colSpan={5} className="text-center py-4 text-gray-500">No Employees found</td>
                     </tr>
                   ) : (
                     filteredEmployees.map((user, index) => (
@@ -307,6 +324,14 @@ const EmployeesPage: React.FC = () => {
                         <td className="border-b border-gray-300 p-3 text-sm">{user.email}</td>
                         <td className="border-b border-gray-300 p-3 text-sm">{moment(user.createdAt).fromNow()}</td>
                         <td className="border-b border-gray-300 p-3 text-sm">{user.role}</td>
+                        <td className="border-b border-gray-300 p-3 text-sm">
+                          <button
+                            onClick={() => handleRemoveEmployee(user.id)}
+                            className="bg-red-500 text-white py-1 px-2 rounded-full hover:bg-red-600 transition duration-300 flex items-center"
+                          >
+                            <FaTrash />
+                          </button>
+                        </td>
                       </tr>
                     ))
                   )}

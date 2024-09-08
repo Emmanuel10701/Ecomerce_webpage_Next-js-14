@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { name, userId } = body;
 
-    // Validate required 
+    // Validate required fields
     if (!name || !userId) {
       return new NextResponse(JSON.stringify({ error: 'Name and userId are required' }), { status: 400 });
     }
@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
     if (id) {
       // Fetch a single employee by ID
       const employee = await prisma.employee.findUnique({
-        where: { id:String(id) },
+        where: { id: String(id) },
         include: {
           user: { select: { email: true } },
         },
@@ -78,27 +78,5 @@ export async function GET(req: NextRequest) {
   } catch (error: any) {
     console.error('Error fetching employees:', error);
     return new NextResponse(JSON.stringify({ error: 'Error fetching employees', details: error.message }), { status: 500 });
-  }
-}
-
-// Handle DELETE request
-export async function DELETE(req: NextRequest) {
-  try {
-    const { searchParams } = new URL(req.url);
-    const id = searchParams.get('id');
-
-    if (!id) {
-      return new NextResponse(JSON.stringify({ error: 'ID is required' }), { status: 400 });
-    }
-
-    // Delete employee by ID
-    const deletedEmployee = await prisma.employee.delete({
-      where: { id: String(id) },
-    });
-
-    return NextResponse.json(deletedEmployee);
-  } catch (error: any) {
-    console.error('Error deleting employee:', error);
-    return new NextResponse(JSON.stringify({ error: 'Error deleting employee', details: error.message }), { status: 500 });
   }
 }
