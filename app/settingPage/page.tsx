@@ -34,7 +34,6 @@ const Settings: React.FC = () => {
   const [users, setUsers] = useState<any[]>([]);
   const [admins, setAdmins] = useState<any[]>([]);
   const [selectedUser, setSelectedUser] = useState<any>(null);
-  const [selectedAdmin, setSelectedAdmin] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
@@ -93,11 +92,14 @@ const Settings: React.FC = () => {
     if (selectedUser) {
       setLoading(true);
       try {
-        await axios.post('/api/admins');
+        await axios.post('/api/admins', {
+          name: selectedUser.name,
+          userId: selectedUser.id,
+        });
         setSnackbarMessage('Admin added successfully');
         setSnackbarSeverity('success');
-      } catch (err) {
-        console.error(err);
+      } catch (err:any) {
+        console.error('Failed to add admin:', err.response?.data || err.message);
         setSnackbarMessage('Failed to add admin');
         setSnackbarSeverity('error');
       } finally {
@@ -107,6 +109,7 @@ const Settings: React.FC = () => {
       }
     }
   };
+  
 
   const handleAddEmployee = async () => {
     if (selectedUser) {
@@ -267,36 +270,52 @@ const Settings: React.FC = () => {
       </div>
 
       {/* Modals */}
-      <Modal open={modalOpen === 'addAdmin'} onClose={closeModal} title="Add Admin">
-        <div>
-          <h3 className="text-lg font-semibold mb-4">Select User</h3>
-          <Autocomplete
-            options={users}
-            getOptionLabel={(option) => option.name}
-            value={selectedUser}
-            onChange={(event, value) => selectedUser(value)}
-            renderInput={(params) => <TextField {...params} label="Search Employee" variant="outlined" fullWidth />}
-            renderOption={(props, option) => (
-              <li {...props} style={{ fontWeight: selectedUser?.id === option.id ? 'bold' : 'normal', color: selectedUser?.id === option.id ? 'green' : 'black' }}>
-                {option.name}
-              </li>
+          <Modal open={modalOpen === 'addAdmin'} onClose={closeModal} title="Add Admin">
+          <div>
+            <h3 className="text-lg font-semibold mb-4">Select User</h3>
+            <Autocomplete
+              options={users}
+              getOptionLabel={(option) => `${option.name} (${option.email})`}
+              value={selectedUser}
+              onChange={(event, value) => setSelectedUser(value)}
+              renderInput={(params) => <TextField {...params} label="Search User" variant="outlined" fullWidth />}
+              renderOption={(props, option) => (
+                <li {...props} style={{ fontWeight: selectedUser?.id === option.id ? 'bold' : 'normal' }}>
+                  {option.name} ({option.email})
+                  {admins.some(admin => admin.userId === option.id) && (
+                    <CheckCircleIcon className="w-5 h-5 text-yellow-500 ml-2" />
+                  )}
+                </li>
+              )}
+            />
+
+            {selectedUser && (
+              <div className="mt-4">
+                <p>Selected User: {selectedUser.name}</p>
+                {!admins.some(admin => admin.userId === selectedUser.id) ? (
+                  <button
+                    onClick={handleAddAdmin}
+                    className="mt-4 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded flex items-center"
+                    disabled={loading}
+                  >
+                    {loading && <CircularProgress size={20} className="mr-2" />}
+                    Add Admin
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleRemoveAdmin(selectedUser.id)}
+                    className="mt-4 bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded flex items-center"
+                    disabled={loading}
+                  >
+                    {loading && <CircularProgress size={20} className="mr-2" />}
+                    Remove Admin
+                  </button>
+                )}
+              </div>
             )}
-          />
-          {selectedUser && (
-            <div className="mt-4">
-              <p>Selected User: {selectedUser.name}</p>
-              <button
-                onClick={handleAddAdmin}
-                className="mt-4 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded flex items-center"
-                disabled={loading}
-              >
-                {loading && <CircularProgress size={20} className="mr-2" />}
-                Add Admin
-              </button>
-            </div>
-          )}
-        </div>
-      </Modal>
+          </div>
+         </Modal>
+
 
       <Modal open={modalOpen === 'addEmployee'} onClose={closeModal} title="Add Employee">
         <div>
@@ -344,29 +363,30 @@ const Settings: React.FC = () => {
       </Modal>
 
       <Modal open={modalOpen === 'viewAdmins'} onClose={closeModal} title="View Admins">
-        <div>
-          <h3 className="text-lg font-semibold mb-4">Admin List</h3>
-          {admins.length === 0 ? (
-            <p>No admins available.</p>
-          ) : (
-            <ul>
-              {admins.map(admin => (
-                <li key={admin.id} className="flex justify-between items-center mb-2">
-                  <span>{admin.name} ({admin.email})</span>
-                  <button
-                    onClick={() => handleRemoveAdmin(admin.id)}
-                    className="text-red-500 hover:text-red-700 flex items-center"
-                    disabled={loading}
-                  >
-                    {loading && <CircularProgress size={20} className="mr-2" />}
-                    Remove
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </Modal>
+  <div>
+    <h3 className="text-lg font-semibold mb-4">Admin List</h3>
+    {admins.length === 0 ? (
+      <p>No admins available.</p>
+    ) : (
+      <ul>
+        {admins.map(admin => (
+          <li key={admin.id} className="flex justify-between items-center mb-2">
+            <span>{admin.name} ({admin.email})</span>
+            <button
+              onClick={() => handleRemoveAdmin(admin.id)}
+              className="text-red-500 hover:text-red-700 flex items-center"
+              disabled={loading}
+            >
+              {loading && <CircularProgress size={20} className="mr-2" />}
+              Remove Admin
+            </button>
+          </li>
+        ))}
+      </ul>
+    )}
+  </div>
+</Modal>
+
 
       {/* Snackbar for notifications */}
       <Snackbar

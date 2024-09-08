@@ -21,20 +21,27 @@ export async function POST(req: NextRequest) {
       return new NextResponse(JSON.stringify({ error: 'User not found' }), { status: 404 });
     }
 
+    // Update the user's role to "ADMIN"
+    await prisma.user.update({
+      where: { id: userId },
+      data: { role: 'ADMIN' },
+    });
+
     // Create the new admin
     const newAdmin = await prisma.admin.create({
-        data: {
-          name,
-          user: { connect: { id: userId } },
-        },
-        include: {
-          user: { select: { email: true } },
-        },
+      data: {
+        name,
+        user: { connect: { id: userId } },
+      },
+      include: {
+        user: { select: { email: true, role: true } },
+      },
     });
 
     return NextResponse.json({
       ...newAdmin,
       email: newAdmin.user.email,
+      role: newAdmin.user.role,
     }, { status: 201 });
   } catch (error: any) {
     console.error('Error creating admin:', error);
