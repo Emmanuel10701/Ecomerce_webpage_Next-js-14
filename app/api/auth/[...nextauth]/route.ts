@@ -76,7 +76,9 @@ const authOptions: NextAuthOptions = {
               data: {
                 name: user.name || '',
                 email: user.email,
-                hashedPassword: '', // No password for OAuth users
+                hashedPassword: '',
+                role: 'STAFF', // Set default role for new users
+                // No password for OAuth users
               },
             });
           }

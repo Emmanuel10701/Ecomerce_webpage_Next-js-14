@@ -7,6 +7,8 @@ import axios from 'axios';
 import { Autocomplete, TextField, CircularProgress, Snackbar, Alert } from '@mui/material';
 import Sidebar from '@/components/sidebarSetting/page';
 import { PencilIcon, XMarkIcon, Bars3Icon, CheckCircleIcon } from '@heroicons/react/24/outline';
+import { useSession, signOut } from 'next-auth/react';
+
 
 const Modal: React.FC<{ open: boolean; onClose: () => void; title: string; children: React.ReactNode }> = ({ open, onClose, title, children }) => {
   return (
@@ -136,7 +138,7 @@ const Settings: React.FC = () => {
   const handleRemoveEmployee = async (userId: number) => {
     setLoading(true);
     try {
-      await axios.delete(`/api/employees/${userId}`);
+      await fetch(`/api/employees/${userId}`, { method: 'DELETE' });
       setSnackbarMessage('Employee removed successfully');
       setSnackbarSeverity('success');
     } catch (err) {
@@ -152,7 +154,7 @@ const Settings: React.FC = () => {
   const handleRemoveAdmin = async (adminId: number) => {
     setLoading(true);
     try {
-      await axios.post('/api/admins', { adminId });
+      await fetch(`/api/admins/${adminId}`, { method: 'DELETE' });
       setSnackbarMessage('Admin removed successfully');
       setSnackbarSeverity('success');
     } catch (err) {
@@ -364,22 +366,15 @@ const Settings: React.FC = () => {
 
       <Modal open={modalOpen === 'viewAdmins'} onClose={closeModal} title="View Admins">
   <div>
-    <h3 className="text-lg font-semibold mb-4">Admin List</h3>
+    <h3 className="text-lg font-semibold mb-4 text-center text-purple-600">Admin List</h3>
     {admins.length === 0 ? (
-      <p>No admins available.</p>
+      <p className='text-slate-600 text-center'>No admins available.</p>
     ) : (
       <ul>
         {admins.map(admin => (
-          <li key={admin.id} className="flex justify-between items-center mb-2">
+          <li key={admin.id} className="flex justify-between text-slate-600 font-bold items-center mb-2">
             <span>{admin.name} ({admin.email})</span>
-            <button
-              onClick={() => handleRemoveAdmin(admin.id)}
-              className="text-red-500 hover:text-red-700 flex items-center"
-              disabled={loading}
-            >
-              {loading && <CircularProgress size={20} className="mr-2" />}
-              Remove Admin
-            </button>
+              
           </li>
         ))}
       </ul>
