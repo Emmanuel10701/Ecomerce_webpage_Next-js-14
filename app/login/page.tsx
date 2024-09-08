@@ -38,15 +38,15 @@ const Login = () => {
 
     setIsSubmitting(true);
     
-    const res = await signIn("credentials", {
+    const result = await signIn("credentials", {
+      redirect: false,
       email: data.email,
       password: data.password,
-      redirect: false,
     });
 
-    if (res?.error) {
-      toast.error("Invalid email or password. Please try again.");
-    } else if (res?.ok) {
+    if (result?.error) {
+      toast.error(result.error);
+    } else if (result?.ok) {
       toast.success("Sign-in successful!");
       router.push("/analytics");
     } else {
@@ -100,7 +100,7 @@ const Login = () => {
           <button
             type="button"
             className="text-blue-500 text-sm hover:underline"
-            onClick={() => router.push("forgot")}
+            onClick={() => router.push("/forgot")}
           >
             Forgot password?
           </button>

@@ -45,6 +45,7 @@ const authOptions: NextAuthOptions = {
 
           return user;
         } catch (error) {
+          console.error('Authorization error:', error);
           throw new Error('An error occurred during authorization');
         }
       },
@@ -76,13 +77,13 @@ const authOptions: NextAuthOptions = {
               data: {
                 name: user.name || '',
                 email: user.email,
-                hashedPassword: '',
+                hashedPassword: '', // No password for OAuth users
                 role: 'STAFF', // Set default role for new users
-                // No password for OAuth users
               },
             });
           }
         } catch (error) {
+          console.error('Error during OAuth user creation:', error);
           throw new Error('An error occurred while processing sign-in');
         }
       }
