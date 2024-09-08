@@ -55,7 +55,7 @@ const HomePage = () => {
     }
 
     try {
-      await axios.post('/api/subscribers', { email });
+      await axios.post('/api/subs', { email });
       toast.success('Subscription successful!');
       setEmail(''); // Clear sfter submission
     } catch (error) {
@@ -65,7 +65,7 @@ const HomePage = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen mt-16">
       {/* Image Slider */}
       <div className='flex items-center gap-1'>
         <div className='w-1/3 flex-1'>
@@ -164,8 +164,8 @@ const HomePage = () => {
         </section>
 
         {/* Why Choose Us Section */}
-        <section className="py-12 bg-white">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <section className="py-12 bg-white flex  items center">
+          <div className="max-w-6xl mx-auto px-4  flex-1 sm:px-6 lg:px-8 text-center">
             <h2 className="text-3xl font-bold mb-6 text-slate-500">Why Choose Us?</h2>
             <div className="space-y-8">
               <div className="flex items-center justify-center space-x-4">
@@ -214,11 +214,22 @@ const HomePage = () => {
               </div>
             </div>
           </div>
-        </section>
+          <div className="hidden md:flex flex-1 justify-center">
+             <Image src="/assets/ecomerce.jpg" alt="image for customer" width={280} height={380} className="flex-1" />
+         </div>
+          </section>
 
         {/* FAQ Section */}
-        <section className="py-12 bg-gray-100">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <section className="py-12 bg-gray-100 flex items-center ">
+      {/* Image section which is flex in bog screen and hidded in smallscreen  */}
+
+         
+          <div className="hidden md:flex flex-1 justify-center">
+             <Image src="/assets/img1.webp" alt="image for customer" width={280} height={380} className="flex-1" />
+          </div>
+
+
+          <div className="max-w-6xl  flex-1 mx-auto px-4 sm:px-6 lg:px-8">
             <h2 className="text-3xl font-bold mb-6 text-center text-slate-500">FAQ</h2>
             <div className="collapse collapse-plus border border-gray-200 rounded-lg mb-4">
               <input type="checkbox" id="faq1" className="peer hidden" />
@@ -265,24 +276,25 @@ const HomePage = () => {
             <h2 className="text-4xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-blue-500">
               Stay Updated with Our Newsletter
             </h2>
-            <p className="text-lg mb-6 opacity-80">
+            <p className="text-lg text-slate-500 mb-6 opacity-80">
               Subscribe to our newsletter to receive the latest updates, exclusive offers, and more. Don't miss out on our exciting promotions!
             </p>
-            <div className="flex justify-center items-center space-x-2">
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
-                className="p-4 w-full max-w-sm text-slate-600 rounded-lg border-2 border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <span
-                className="bg-white text-blue-700 px-6 py-4 rounded-lg text-lg  font-semibold hover:bg-gray-100 transition cursor-pointer"
-                onClick={handleSubscribe}
-              >
-                Subscribe
-              </span>
-            </div>
+            <div className="flex flex-col sm:flex-row justify-center items-center space-y-4 sm:space-y-0 sm:space-x-4">
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Enter your email"
+            className="p-4 w-full max-w-xs text-slate-600 rounded-lg border-2 border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <span
+            className="bg-white text-blue-700 px-6 py-4 rounded-lg text-lg font-semibold hover:bg-gray-100 transition cursor-pointer"
+            onClick={handleSubscribe}
+          >
+            Subscribe
+          </span>
+        </div>
+
           </div>
         </section>
       </main>

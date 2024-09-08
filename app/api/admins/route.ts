@@ -23,20 +23,18 @@ export async function POST(req: NextRequest) {
 
     // Create the new admin
     const newAdmin = await prisma.admin.create({
-      data: {
-        name,
-        userId, // Use userId to link the admin to the user
-        role: 'ADMIN', // Ensure role is set correctly
-      },
-      include: {
-        user: { select: { email: true, role: true } }, // Include user data
-      },
+        data: {
+          name,
+          user: { connect: { id: userId } },
+        },
+        include: {
+          user: { select: { email: true } },
+        },
     });
 
     return NextResponse.json({
       ...newAdmin,
       email: newAdmin.user.email,
-      role: newAdmin.user.role,
     }, { status: 201 });
   } catch (error: any) {
     console.error('Error creating admin:', error);

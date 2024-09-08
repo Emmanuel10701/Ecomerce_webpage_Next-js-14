@@ -65,11 +65,11 @@ const Card: React.FC<CardProps> = ({
   return (
     <div 
       className="relative border p-2 rounded-lg overflow-hidden shadow-md w-[100%] bg-white hover:shadow-lg transition-shadow duration-300 ease-in-out cursor-pointer"
-      onClick={handleCardClick}
     >
       <div>
         <Image 
           src={imageUrl} 
+          onClick={handleCardClick}
           alt={title} 
           width={150} 
           height={150} 

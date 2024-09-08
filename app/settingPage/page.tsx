@@ -33,7 +33,6 @@ const Settings: React.FC = () => {
   const [employees, setEmployees] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [admins, setAdmins] = useState<any[]>([]);
-  const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [selectedAdmin, setSelectedAdmin] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -91,10 +90,10 @@ const Settings: React.FC = () => {
   };
 
   const handleAddAdmin = async () => {
-    if (selectedEmployee) {
+    if (selectedUser) {
       setLoading(true);
       try {
-        await axios.post('/api/admins', { employeeId: selectedEmployee.id });
+        await axios.post('/api/admins');
         setSnackbarMessage('Admin added successfully');
         setSnackbarSeverity('success');
       } catch (err) {
@@ -270,22 +269,22 @@ const Settings: React.FC = () => {
       {/* Modals */}
       <Modal open={modalOpen === 'addAdmin'} onClose={closeModal} title="Add Admin">
         <div>
-          <h3 className="text-lg font-semibold mb-4">Select Employee</h3>
+          <h3 className="text-lg font-semibold mb-4">Select User</h3>
           <Autocomplete
-            options={employees}
+            options={users}
             getOptionLabel={(option) => option.name}
-            value={selectedEmployee}
-            onChange={(event, value) => setSelectedEmployee(value)}
+            value={selectedUser}
+            onChange={(event, value) => selectedUser(value)}
             renderInput={(params) => <TextField {...params} label="Search Employee" variant="outlined" fullWidth />}
             renderOption={(props, option) => (
-              <li {...props} style={{ fontWeight: selectedEmployee?.id === option.id ? 'bold' : 'normal', color: selectedEmployee?.id === option.id ? 'green' : 'black' }}>
+              <li {...props} style={{ fontWeight: selectedUser?.id === option.id ? 'bold' : 'normal', color: selectedUser?.id === option.id ? 'green' : 'black' }}>
                 {option.name}
               </li>
             )}
           />
-          {selectedEmployee && (
+          {selectedUser && (
             <div className="mt-4">
-              <p>Selected Employee: {selectedEmployee.name}</p>
+              <p>Selected User: {selectedUser.name}</p>
               <button
                 onClick={handleAddAdmin}
                 className="mt-4 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded flex items-center"
@@ -326,7 +325,7 @@ const Settings: React.FC = () => {
                   className="mt-4 bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded flex items-center"
                   disabled={loading}
                 >
-                  {loading && <CircularProgress size={20} className="mr-2" />}
+                  {loading && <CircularProgress size={20} className="mr-2 text-white" />}
                   Remove Employee
                 </button>
               ) : (
@@ -335,7 +334,7 @@ const Settings: React.FC = () => {
                   className="mt-4 bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded flex items-center"
                   disabled={loading}
                 >
-                  {loading && <CircularProgress size={20} className="mr-2" />}
+                  {loading && <CircularProgress size={20} className="mr-2 text-white" />}
                   Add Employee
                 </button>
               )}

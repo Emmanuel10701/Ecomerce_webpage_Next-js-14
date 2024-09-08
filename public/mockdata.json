@@ -13,8 +13,8 @@
     "id": 2,
     "title": "Blender",
     "description": "High-speed blender for all your kitchen needs.",
-    "price": 99,
-    "oldPrice": 129,
+    "price": 109,
+    "oldPrice": 149,
     "imageUrl": "/images/blender.jpg",
     "rating": 4.0,
     "category": "Home Appliances"
@@ -33,8 +33,8 @@
     "id": 4,
     "title": "Children's Book",
     "description": "Engaging book for children aged 6-10.",
-    "price": 15,
-    "oldPrice": 20,
+    "price": 35,
+    "oldPrice": 40,
     "imageUrl": "/images/book.jpg",
     "rating": 4.2,
     "category": "Books & Media"

@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
@@ -24,14 +24,14 @@ interface User {
 
 const PAGE_SIZE = 10;
 
-const UsersPage: React.FC = () => {
-  const [users, setUsers] = useState<User[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
+const EmployeesPage: React.FC = () => {
+  const [employees, setEmployees] = useState<User[]>([]);
+  const [filteredEmployees, setFilteredEmployees] = useState<User[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
   const [emailSubject, setEmailSubject] = useState('');
@@ -41,6 +41,7 @@ const UsersPage: React.FC = () => {
   const modalRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
+  // Authentication
   const { data: session, status } = useSession();
 
   const handleLogin = () => {
@@ -60,16 +61,17 @@ const UsersPage: React.FC = () => {
     setLoading(false);
   }, [session, status]);
 
-  const fetchUsers = async () => {
+  // Fetch employees
+  const fetchEmployees = async () => {
     setLoading(true);
     try {
       const response = await axios.get('/api/employees');
-      setUsers(response.data);
+      setEmployees(response.data);
       setTotalPages(Math.ceil(response.data.length / PAGE_SIZE));
-      setFilteredUsers(response.data.slice(0, PAGE_SIZE));
+      setFilteredEmployees(response.data.slice(0, PAGE_SIZE));
     } catch (error) {
       console.error(error);
-      toast.error('Failed to fetch users.');
+      toast.error('Failed to fetch employees.');
     } finally {
       setLoading(false);
     }
@@ -77,10 +79,11 @@ const UsersPage: React.FC = () => {
 
   useEffect(() => {
     if (session) {
-      fetchUsers();
+      fetchEmployees();
     }
   }, [session]);
 
+  // Handle email modal and actions
   const handleEmailAll = () => {
     setIsEmailModalOpen(true);
     setDropdownOpen(false);
@@ -89,7 +92,7 @@ const UsersPage: React.FC = () => {
   const sendEmailContent = async () => {
     try {
       await axios.post('/api/send-email', {
-        emails: filteredUsers.map(user => user.email).join(','),
+        emails: filteredEmployees.map(user => user.email).join(','),
         subject: emailSubject,
         body: emailBody,
       });
@@ -106,13 +109,13 @@ const UsersPage: React.FC = () => {
   const exportToPDF = () => {
     const docDefinition: TDocumentDefinitions = {
       content: [
-        { text: 'Users Report', style: 'header' },
+        { text: 'Employees Report', style: 'header' },
         {
-          text: 'This report includes detailed information about all users.',
+          text: 'This report includes detailed information about all employees.',
           style: 'intro',
         },
         {
-          text: 'Users Information:',
+          text: 'Employees Information:',
           style: 'subheader',
         },
         {
@@ -121,7 +124,7 @@ const UsersPage: React.FC = () => {
             widths: ['*', '*', '*', '*'],
             body: [
               ['Name', 'Email', 'Date Joined', 'Role'],
-              ...filteredUsers.map(user => [
+              ...filteredEmployees.map(user => [
                 user.name,
                 user.email,
                 moment(user.createdAt).format('YYYY-MM-DD'),
@@ -158,21 +161,21 @@ const UsersPage: React.FC = () => {
     };
 
     pdfMake.vfs = pdfFonts.pdfMake.vfs;
-    pdfMake.createPdf(docDefinition).download('users_report.pdf');
+    pdfMake.createPdf(docDefinition).download('employees_report.pdf');
     setDropdownOpen(false);
   };
 
   const handleRefresh = () => {
     setIsRefreshing(true);
-    fetchUsers().finally(() => setIsRefreshing(false));
+    fetchEmployees().finally(() => setIsRefreshing(false));
   };
 
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(event.target.value);
-    const filtered = users.filter(user =>
+    const filtered = employees.filter(user =>
       user.name.toLowerCase().includes(event.target.value.toLowerCase())
     );
-    setFilteredUsers(filtered.slice(0, PAGE_SIZE));
+    setFilteredEmployees(filtered.slice(0, PAGE_SIZE));
     setTotalPages(Math.ceil(filtered.length / PAGE_SIZE));
     setCurrentPage(1);
   };
@@ -180,16 +183,16 @@ const UsersPage: React.FC = () => {
   const handlePageChange = (page: number) => {
     const startIndex = (page - 1) * PAGE_SIZE;
     const endIndex = page * PAGE_SIZE;
-    setFilteredUsers(users.slice(startIndex, endIndex));
+    setFilteredEmployees(employees.slice(startIndex, endIndex));
     setCurrentPage(page);
   };
 
   if (!session) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-white">
+      <div className="flex items-center justify-center min-h-screen bg-gray-100">
         <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-sm text-center">
           <h2 className="text-2xl font-bold mb-4">Please Log In</h2>
-          <p className="mb-6">You need to log in to access this page.</p>
+          <p className="mb-6">You need to log in or register to access this page.</p>
           <button 
             onClick={handleLogin} 
             className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition duration-300"
@@ -204,23 +207,22 @@ const UsersPage: React.FC = () => {
   return (
     <>
       <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
-      <div className="bg-white flex transition-all duration-300 min-h-screen p-4 md:p-8">
-        <div className="w-full flex-1">
+      <div className={`flex transition-all duration-300 ${isSidebarOpen ? 'ml-[25%]' : 'ml-[2%]'} px-4 md:px-8 py-4`}>
+        <div className="flex-1">
           <div className="mb-4 flex flex-col md:flex-row items-center justify-between">
             <h1 className="text-2xl text-purple-400 mt-6 font-bold">Employees List</h1>
-            <div className="relative flex items-center space-x-4">
+            <div className="relative flex items-center space-x-4 md:space-x-4">
               <input
                 type="text"
                 value={searchTerm}
                 onChange={handleSearch}
                 placeholder="Search by name"
-                className="p-2 border border-gray-300 focus:outline-none focus:bg-slate-100 rounded-md"
+                className="p-2 border border-gray-300 focus:outline-1 bg-slate-100 rounded-md"
               />
-              {/* Small device dropdown */}
               <div className="md:hidden" ref={dropdownRef}>
                 <button
                   onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className="bg-gray-800 text-white p-2 rounded-full hover:bg-gray-700 transition duration-300"
+                  className="bg-gray-800 text-white p-2 rounded-full hover:bg-gray-700 transition duration-300 flex items-center"
                 >
                   <FaEllipsisV />
                 </button>
@@ -250,110 +252,131 @@ const UsersPage: React.FC = () => {
                   </div>
                 )}
               </div>
-              {/* Desktop buttons */}
               <div className="hidden md:flex items-center space-x-4">
                 <button
                   onClick={handleRefresh}
-                  className="bg-purple-300 text-white px-4 py-2 rounded hover:bg-purple-400 transition duration-300"
+                  className="bg-blue-500 text-white py-1.5 px-3 rounded-full hover:bg-blue-600 transition duration-300 flex items-center"
                 >
-                  <FaSync className="inline-block mr-2" />
+                  <FaSync className="mr-2" />
                   Refresh
                 </button>
                 <button
                   onClick={handleEmailAll}
-                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition duration-300"
+                  className="bg-green-500 text-white py-1.5 px-3 rounded-full hover:bg-green-600 transition duration-300 flex items-center"
                 >
-                  <FaEnvelope className="inline-block mr-2" />
+                  <FaEnvelope className="mr-2" />
                   Email All
                 </button>
                 <button
                   onClick={exportToPDF}
-                  className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition duration-300"
+                  className="bg-red-500 text-white py-1.5 px-3 rounded-full hover:bg-red-600 transition duration-300 flex items-center"
                 >
-                  <FaFilePdf className="inline-block mr-2" />
+                  <FaFilePdf className="mr-2" />
                   Export as PDF
                 </button>
               </div>
             </div>
           </div>
-
-          {/* Display Users List or Loading */}
           {loading ? (
             <LoadingSpinner />
           ) : (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredUsers.map((user) => (
-                  <div key={user.id} className="bg-white shadow-md rounded-lg p-4 border border-gray-300">
-                    <h2 className="text-xl font-semibold text-gray-700">{user.name}</h2>
-                    <p className="text-gray-500">{user.email}</p>
-                    <p className="text-gray-400 text-sm">Joined: {moment(user.createdAt).format('YYYY-MM-DD')}</p>
-                    <p className="text-gray-500">Role: {user.role}</p>
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex justify-center mt-6">
+              <table className="w-full border-collapse border border-gray-300 bg-white rounded-md shadow-md">
+                <thead className="bg-gray-200 text-gray-600">
+                  <tr>
+                    <th className="border-b border-gray-300 p-3 text-left text-sm font-semibold">Name</th>
+                    <th className="border-b border-gray-300 p-3 text-left text-sm font-semibold">Email</th>
+                    <th className="border-b border-gray-300 p-3 text-left text-sm font-semibold">Date Joined</th>
+                    <th className="border-b border-gray-300 p-3 text-left text-sm font-semibold">Role</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredEmployees.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="text-center py-4 text-gray-500">No Employees found</td>
+                    </tr>
+                  ) : (
+                    filteredEmployees.map((user, index) => (
+                      <tr
+                        key={user.id}
+                        className={`hover:bg-gray-50 ${
+                          index % 2 === 0 ? 'bg-purple-100' : 'bg-blue-100'
+                        }`}
+                      >
+                        <td className="border-b border-gray-300 p-3 text-sm">{user.name}</td>
+                        <td className="border-b border-gray-300 p-3 text-sm">{user.email}</td>
+                        <td className="border-b border-gray-300 p-3 text-sm">{moment(user.createdAt).fromNow()}</td>
+                        <td className="border-b border-gray-300 p-3 text-sm">{user.role}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+              <div className="mt-4 flex justify-between items-center">
                 <button
-                  disabled={currentPage === 1}
                   onClick={() => handlePageChange(currentPage - 1)}
-                  className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold py-2 px-4 rounded-l"
+                  disabled={currentPage === 1}
+                  className="bg-gray-300 text-gray-600 py-1 px-3 rounded-md hover:bg-gray-400 transition duration-300"
                 >
-                  Prev
+                  Previous
                 </button>
+                <span>
+                  Page {currentPage} of {totalPages}
+                </span>
                 <button
-                  disabled={currentPage === totalPages}
                   onClick={() => handlePageChange(currentPage + 1)}
-                  className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold py-2 px-4 rounded-r"
+                  disabled={currentPage === totalPages}
+                  className="bg-gray-300 text-gray-600 py-1 px-3 rounded-md hover:bg-gray-400 transition duration-300"
                 >
                   Next
                 </button>
               </div>
             </>
           )}
+          {isEmailModalOpen && (
+            <div className="fixed inset-0 flex items-center justify-center z-50 bg-gray-800 bg-opacity-50" ref={modalRef}>
+              <div className="bg-white p-6 rounded-lg shadow-lg max-w-lg w-full">
+                <h2 className="text-xl font-bold mb-4">Send Email to Employees</h2>
+                <label className="block mb-2">
+                  <span className="text-gray-700">Subject:</span>
+                  <input
+                    type="text"
+                    value={emailSubject}
+                    onChange={e => setEmailSubject(e.target.value)}
+                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                  />
+                </label>
+                <label className="block mb-4">
+                  <span className="text-gray-700">Body:</span>
+                  <textarea
+                    value={emailBody}
+                    onChange={e => setEmailBody(e.target.value)}
+                    rows={5}
+                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                  />
+                </label>
+                <div className="flex justify-end space-x-4">
+                  <button
+                    onClick={() => setIsEmailModalOpen(false)}
+                    className="bg-gray-500 text-white py-1 px-3 rounded-full hover:bg-gray-600 transition duration-300"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={sendEmailContent}
+                    className="bg-blue-500 text-white py-1 px-3 rounded-full hover:bg-blue-600 transition duration-300"
+                  >
+                    Send Email
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+          <ToastContainer />
         </div>
       </div>
-
-      {/* Email Modal */}
-      {isEmailModalOpen && (
-        <div className="fixed z-50 inset-0 flex items-center justify-center bg-gray-500 bg-opacity-50">
-          <div ref={modalRef} className="bg-white p-6 rounded shadow-lg w-full max-w-md">
-            <h2 className="text-xl font-bold mb-4">Send Email</h2>
-            <input
-              type="text"
-              value={emailSubject}
-              onChange={(e) => setEmailSubject(e.target.value)}
-              placeholder="Subject"
-              className="w-full mb-4 p-2 border border-gray-300 rounded focus:outline-none focus:bg-slate-100"
-            />
-            <textarea
-              value={emailBody}
-              onChange={(e) => setEmailBody(e.target.value)}
-              placeholder="Message"
-              className="w-full mb-4 p-2 border border-gray-300 rounded focus:outline-none focus:bg-slate-100"
-              rows={5}
-            ></textarea>
-            <div className="flex justify-end space-x-4">
-              <button
-                onClick={() => setIsEmailModalOpen(false)}
-                className="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400 transition duration-300"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={sendEmailContent}
-                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition duration-300"
-              >
-                Send
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <ToastContainer />
     </>
   );
 };
 
-export default UsersPage;
+export default EmployeesPage;

@@ -23,6 +23,7 @@ const getProductById = (id: number): Product | undefined => {
 // Component to fetch product data and handle 404
 const ProductPage = ({ params }: { params: { id: string } }) => {
   const productId = parseInt(params.id, 10);
+  console.log(params)
   const product = getProductById(productId);
 
   if (!product) {
@@ -36,17 +37,21 @@ const ProductPage = ({ params }: { params: { id: string } }) => {
       <Image
         src={product.imageUrl || '/placeholder.jpg'}
         alt={product.title}
-        width={500}
-        height={500}
+        width={100}
+        height={100}
         layout="responsive"
       />
       <p>{product.description}</p>
-      <div>Price: {product.price}</div>
-      {product.oldPrice && <div>Old Price: {product.oldPrice}</div>}
+      <div className='text-green-600'>Price: {product.price}</div>
+      {product.oldPrice && <div className='text-slate-400 text-center font-bold line through'>Old Price: {product.oldPrice}</div>}
       {product.rating && <div>Rating: {product.rating}</div>}
     </div>
   );
 };
+//related proudcts in the stock section
+<div className='flex items-center gap-1 '>
+
+</div>
 
 // Generate static params if needed for pre-rendering
 export async function generateStaticParams() {

@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { name, userId } = body;
 
-    // Validate required fields
+    // Validate required 
     if (!name || !userId) {
       return new NextResponse(JSON.stringify({ error: 'Name and userId are required' }), { status: 400 });
     }
