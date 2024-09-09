@@ -77,7 +77,7 @@ const CalendarPage: React.FC = () => {
 
   const handleAddEvent = async () => {
     if (eventTitle && eventDate) {
-      if ((session?.user as User)?.role === 'admin') {
+      if ((session?.user as User)?.role === 'ADMIN') {
         setLoading(true);
         try {
           const newEvent: Event = { title: eventTitle, date: eventDate, color: 'green', id: Date.now().toString() };
