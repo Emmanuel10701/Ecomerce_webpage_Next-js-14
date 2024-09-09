@@ -11,7 +11,6 @@ interface RegisterRequestBody {
 
 const PASSWORD_REGEX = /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 
-// POST request handler for user registration
 export async function POST(request: NextRequest) {
   try {
     const body: RegisterRequestBody = await request.json();
@@ -20,7 +19,16 @@ export async function POST(request: NextRequest) {
     // Check for missing fields
     if (!name || !email || !password) {
       return new NextResponse(
-        JSON.stringify({ error: 'All fields are required.' }),
+        JSON.stringify({ error: 'Please fill in all fields.' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate email format
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailPattern.test(email)) {
+      return new NextResponse(
+        JSON.stringify({ error: 'Invalid email format. Please provide a valid email address.' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
@@ -29,7 +37,7 @@ export async function POST(request: NextRequest) {
     if (!PASSWORD_REGEX.test(password)) {
       return new NextResponse(
         JSON.stringify({
-          error: 'Password must be at least 8 characters long and include an uppercase letter, a number, and a special character.',
+          error: 'Password must be at least 8 characters long and include an uppercase letter, a number, and a special character. Please try again.',
         }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
@@ -42,7 +50,7 @@ export async function POST(request: NextRequest) {
 
     if (existingUser) {
       return new NextResponse(
-        JSON.stringify({ error: 'An account with this email already exists.' }),
+        JSON.stringify({ error: 'An account with this email already exists. Please use a different email or log in.' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
@@ -60,11 +68,11 @@ export async function POST(request: NextRequest) {
     });
 
     // Respond with success
-    return NextResponse.json({ success: true, data: newUser });
+    return NextResponse.json({ success: true, message: 'Registration successful! You can now log in.', data: newUser });
   } catch (error) {
     console.error('Error during registration:', error);
     return new NextResponse(
-      JSON.stringify({ error: 'Internal Server Error. Please try again later.' }),
+      JSON.stringify({ error: 'Something went wrong during registration. Please try again later.' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
@@ -78,7 +86,7 @@ export async function GET() {
   } catch (error) {
     console.error('Error retrieving users:', error);
     return new NextResponse(
-      JSON.stringify({ error: 'Internal Server Error. Please try again later.' }),
+      JSON.stringify({ error: 'Unable to retrieve users. Please try again later.' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }

@@ -22,7 +22,6 @@ const Register = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isValid, setIsValid] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   // Validate form fields
@@ -34,28 +33,30 @@ const Register = () => {
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     if (!isValid) return;
-  
+
     setIsSubmitting(true);
-    setError(null); // Clear previous error message
 
     try {
       const response = await axios.post('/api/register', data);
-      if (response.status === 200) {
+
+      if (response.status === 200 && response.data.success) {
         toast.success('User registered successfully!');
         router.push('/login');
       } else {
         // Handle specific errors from the server
         const responseData = response.data;
-        if (responseData.error) {
-          setError(responseData.error);
-          toast.error(responseData.error);
-        } else {
-          toast.error('Registration failed. Please try again.');
-        }
+        toast.error(responseData.error || 'Registration failed. Please try again.');
       }
     } catch (error) {
-      console.error('Error during registration:', error);
-      toast.error('Registration failed. Please try again.');
+      if (axios.isAxiosError(error) && error.response) {
+        // Extract specific error messages from the response
+        const responseData = error.response.data;
+        toast.error(responseData.error || 'Registration failed. Please try again.');
+      } else {
+        // Handle unexpected errors
+        console.error('Error during registration:', error);
+        toast.error('Registration failed. Please try again.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -64,17 +65,13 @@ const Register = () => {
   return (
     <section
       className="flex flex-col md:flex-row items-center justify-center min-h-screen bg-cover bg-center bg-no-repeat p-4"
-      style={{ backgroundImage: "url('/assets/rerister.png')" }}
+      style={{ backgroundImage: "url('/assets/register.png')" }}
     >
       <form
         className="p-8 xs:p-10 w-full max-w-md mx-auto md:w-1/2 md:max-w-md flex flex-col items-center justify-center gap-6 rounded-lg bg-white shadow-lg"
         onSubmit={handleSubmit}
       >
         <h1 className="mb-6 text-4xl font-extrabold text-blue-800 text-center">Create Account</h1>
-
-        {error && (
-          <div className="text-red-500 mb-4 text-center">{error}</div>
-        )}
 
         <label className="w-full text-sm font-medium">Name:</label>
         <input

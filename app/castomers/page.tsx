@@ -6,12 +6,13 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import LoadingSpinner from '@/components/spinner/page';
 import Sidebar from '@/components/sidebar/page';
-import { FaSync, FaEnvelope, FaFilePdf, FaEllipsisV } from 'react-icons/fa';
+import { FaSync, FaEnvelope, FaFilePdf, FaEllipsisV, FaTrash } from 'react-icons/fa';
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
 import { TDocumentDefinitions } from 'pdfmake/interfaces';
 import { useSession, signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import moment from 'moment';
 
 interface Customer {
   id: string;
@@ -26,7 +27,7 @@ interface Customer {
 const PAGE_SIZE = 10;
 
 const CustomerPage: React.FC = () => {
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [castomers, setCustomers] = useState<Customer[]>([]);
   const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -38,13 +39,15 @@ const CustomerPage: React.FC = () => {
   const [emailSubject, setEmailSubject] = useState('');
   const [emailBody, setEmailBody] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   // Authentication
   const { data: session, status } = useSession();
-
+  
   const handleLogin = () => {
     router.push("/login");
   };
@@ -54,15 +57,15 @@ const CustomerPage: React.FC = () => {
       setLoading(true);
       return;
     }
-    
+
     if (!session) {
       return;
     }
-    
+
     setLoading(false);
   }, [session, status]);
 
-  // Fetch customers
+  // Fetch castomers
   const fetchCustomers = async () => {
     setLoading(true);
     try {
@@ -72,7 +75,7 @@ const CustomerPage: React.FC = () => {
       setFilteredCustomers(response.data.slice(0, PAGE_SIZE));
     } catch (error) {
       console.error(error);
-      toast.error('Failed to fetch customers.');
+      toast.error('Failed to fetch castomers.');
     } finally {
       setLoading(false);
     }
@@ -84,10 +87,17 @@ const CustomerPage: React.FC = () => {
     }
   }, [session]);
 
+  // Check if the user is an admin
+  const isAdmin = session?.user?.role === 'admin';
+
   // Handle email modal and actions
   const handleEmailAll = () => {
-    setIsEmailModalOpen(true);
-    setDropdownOpen(false);
+    if (isAdmin) {
+      setIsEmailModalOpen(true);
+      setDropdownOpen(false);
+    } else {
+      toast.error('You do not have permission to send emails.');
+    }
   };
 
   const sendEmailContent = async () => {
@@ -112,7 +122,7 @@ const CustomerPage: React.FC = () => {
       content: [
         { text: 'Customers Report', style: 'header' },
         {
-          text: 'This report includes detailed information about all customers.',
+          text: 'This report includes detailed information about all castomers.',
           style: 'intro',
         },
         {
@@ -164,7 +174,7 @@ const CustomerPage: React.FC = () => {
     };
 
     pdfMake.vfs = pdfFonts.pdfMake.vfs;
-    pdfMake.createPdf(docDefinition).download('customers_report.pdf');
+    pdfMake.createPdf(docDefinition).download('castomers_report.pdf');
     setDropdownOpen(false);
   };
 
@@ -175,7 +185,7 @@ const CustomerPage: React.FC = () => {
 
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(event.target.value);
-    const filtered = customers.filter(customer =>
+    const filtered = castomers.filter(customer =>
       customer.name.toLowerCase().includes(event.target.value.toLowerCase())
     );
     setFilteredCustomers(filtered.slice(0, PAGE_SIZE));
@@ -183,16 +193,30 @@ const CustomerPage: React.FC = () => {
     setCurrentPage(1);
   };
 
+  const handleRowClick = (customer: Customer) => {
+    setSelectedCustomer(customer);
+    setIsDetailModalOpen(true);
+  };
+
   const handlePageChange = (page: number) => {
     const startIndex = (page - 1) * PAGE_SIZE;
     const endIndex = page * PAGE_SIZE;
-    setFilteredCustomers(customers.slice(startIndex, endIndex));
+    setFilteredCustomers(castomers.slice(startIndex, endIndex));
     setCurrentPage(page);
   };
 
-  const handleRowClick = (id: string) => {
-    router.push(`/castomers/${id}`);
+  const handleDeleteCustomer = async (id: string) => {
+    try {
+      await axios.delete(`/api/customers/${id}`);
+      toast.success('Customer deleted successfully!');
+      // Refresh customer list or remove customer from state
+      fetchCustomers();
+    } catch (error) {
+      console.error('Failed to delete customer:', error);
+      toast.error('Failed to delete customer.');
+    }
   };
+  
 
   if (!session) {
     return (
@@ -213,7 +237,7 @@ const CustomerPage: React.FC = () => {
 
   return (
     <>
-      <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
+      <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} className='md:hidden' />
       <div className={`flex transition-all duration-300 ${isSidebarOpen ? 'ml-[25%]' : 'ml-[2%]'} px-4 md:px-8 py-4`}>
         <div className="flex-1">
           <div className="mb-4 flex flex-col md:flex-row items-center justify-between">
@@ -231,7 +255,7 @@ const CustomerPage: React.FC = () => {
                   onClick={() => setDropdownOpen(!dropdownOpen)}
                   className="bg-gray-800 text-white p-2 rounded-full hover:bg-gray-700 transition duration-300 flex items-center"
                 >
-                  <FaEllipsisV />
+                <FaEllipsisV />
                 </button>
                 {dropdownOpen && (
                   <div className="absolute right-0 mt-2 bg-white border rounded shadow-lg w-48">
@@ -242,13 +266,15 @@ const CustomerPage: React.FC = () => {
                       <FaSync className="mr-2 text-blue-500" />
                       Refresh
                     </button>
-                    <button
-                      onClick={handleEmailAll}
-                      className="w-full text-left px-4 py-2 hover:bg-green-50 transition duration-300 flex items-center"
-                    >
-                      <FaEnvelope className="mr-2 text-green-500" />
-                      Email All
-                    </button>
+                    {isAdmin && (
+                      <button
+                        onClick={handleEmailAll}
+                        className="w-full text-left px-4 py-2 hover:bg-green-50 transition duration-300 flex items-center"
+                      >
+                        <FaEnvelope className="mr-2 text-green-500" />
+                        Email All
+                      </button>
+                    )}
                     <button
                       onClick={exportToPDF}
                       className="w-full text-left px-4 py-2 hover:bg-red-50 transition duration-300 flex items-center"
@@ -267,13 +293,13 @@ const CustomerPage: React.FC = () => {
                   <FaSync className="mr-2" />
                   Refresh
                 </button>
-                <button
-                  onClick={handleEmailAll}
-                  className="bg-green-500 text-white p-2 rounded hover:bg-green-600 transition duration-300 flex items-center"
-                >
-                  <FaEnvelope className="mr-2" />
-                  Email All
-                </button>
+                  <button
+                    onClick={handleEmailAll}
+                    className="bg-green-500 text-white p-2 rounded hover:bg-green-600 transition duration-300 flex items-center"
+                  >
+                    <FaEnvelope className="mr-2" />
+                    Email All
+                  </button>
                 <button
                   onClick={exportToPDF}
                   className="bg-red-500 text-white p-2 rounded hover:bg-red-600 transition duration-300 flex items-center"
@@ -297,13 +323,14 @@ const CustomerPage: React.FC = () => {
                     <th className="py-2 px-4 border-b text-sm">Address</th>
                     <th className="py-2 px-4 border-b text-sm">User ID</th>
                     <th className="py-2 px-4 border-b text-sm">Role</th>
+                    {isAdmin && <th className="py-2 px-4 border-b text-sm">Actions</th>}
                   </tr>
                 </thead>
                 <tbody>
                   {filteredCustomers.map((customer, index) => (
                     <tr
                       key={customer.id}
-                      onClick={() => handleRowClick(customer.id)}
+                      onClick={() => handleRowClick(customer)}
                       className={`cursor-pointer hover:bg-white ${index % 2 === 0 ? 'bg-green-100' : 'bg-slate-100'}`}
                     >
                       <td className="py-2 px-4 border-b text-sm">{customer.name}</td>
@@ -312,6 +339,19 @@ const CustomerPage: React.FC = () => {
                       <td className="py-2 px-4 border-b text-sm">{customer.address}</td>
                       <td className="py-2 px-4 border-b text-sm">{customer.userId}</td>
                       <td className="py-2 px-4 border-b text-sm">{customer.role}</td>
+                      {isAdmin && (
+                        <td className="py-2 px-4 border-b text-sm">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteCustomer(customer.id);
+                            }}
+                            className="text-red-500 hover:text-red-700"
+                          >
+                            <FaTrash />
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -339,7 +379,59 @@ const CustomerPage: React.FC = () => {
           )}
         </div>
       </div>
-      <ToastContainer />
+
+     {/* Customer Details Modal */}
+{isDetailModalOpen && selectedCustomer && (
+  <div
+    ref={modalRef}
+    className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50"
+  >
+    <div className="bg-white p-6 rounded shadow-lg w-full max-w-lg">
+      <h2 className="text-xl font-bold mb-4">Customer Details</h2>
+      <div className="mb-4">
+        <h3 className="text-lg font-semibold">Name</h3>
+        <p className="text-gray-700">{selectedCustomer.name}</p>
+      </div>
+      <div className="mb-4">
+        <h3 className="text-lg font-semibold">Email</h3>
+        <p className="text-gray-700">{selectedCustomer.email}</p>
+      </div>
+      <div className="mb-4">
+        <h3 className="text-lg font-semibold">Phone Number</h3>
+        <p className="text-gray-700">{selectedCustomer.phoneNumber}</p>
+      </div>
+      <div className="mb-4">
+        <h3 className="text-lg font-semibold">Address</h3>
+        <p className="text-gray-700">{selectedCustomer.address}</p>
+      </div>
+      <div className="mb-4">
+        <h3 className="text-lg font-semibold">User ID</h3>
+        <p className="text-gray-700">{selectedCustomer.userId}</p>
+      </div>
+      <div className="mb-4">
+        <h3 className="text-lg font-semibold">Role</h3>
+        <p className="text-gray-700">{selectedCustomer.role}</p>
+      </div>
+      <div className="flex justify-between items-center">
+        <button
+          onClick={() => setIsDetailModalOpen(false)}
+          className="bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600 transition duration-300"
+        >
+          Close
+        </button>
+        <button
+          onClick={handleDeleteCustomer}
+          className="bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600 transition duration-300"
+        >
+          Delete
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+
+      {/* Email Modal */}
       {isEmailModalOpen && (
         <div
           ref={modalRef}
@@ -387,8 +479,10 @@ const CustomerPage: React.FC = () => {
           </div>
         </div>
       )}
+      <ToastContainer />
     </>
   );
 };
 
 export default CustomerPage;
+

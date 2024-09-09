@@ -7,11 +7,11 @@ import moment from 'moment';
 import 'react-toastify/dist/ReactToastify.css';
 import LoadingSpinner from '@/components/spinner/page';
 import Sidebar from '@/components/sidebar/page';
-import { FaSync, FaEnvelope, FaFilePdf, FaEllipsisV } from 'react-icons/fa';
+import { FaSync, FaEnvelope, FaFilePdf, FaEllipsisV, FaArrowLeft, FaArrowRight } from 'react-icons/fa';
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
 import { TDocumentDefinitions } from 'pdfmake/interfaces';
-import { useSession, signIn } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 
 interface User {
@@ -37,6 +37,7 @@ const UsersPage: React.FC = () => {
   const [emailSubject, setEmailSubject] = useState('');
   const [emailBody, setEmailBody] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [isAccessDeniedModalOpen, setIsAccessDeniedModalOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -55,20 +56,33 @@ const UsersPage: React.FC = () => {
     }
     
     if (!session) {
+      setLoading(false);
       return;
     }
     
     setLoading(false);
   }, [session, status]);
 
-  // Fetch users
+  useEffect(() => {
+    if (session) {
+      fetchUsers();
+    }
+  }, [session]);
+
   const fetchUsers = async () => {
     setLoading(true);
     try {
       const response = await axios.get('/api/register');
-      setUsers(response.data);
-      setTotalPages(Math.ceil(response.data.length / PAGE_SIZE));
-      setFilteredUsers(response.data.slice(0, PAGE_SIZE));
+      const usersData = response.data.data; // Access the data field
+      if (Array.isArray(usersData)) {
+        setUsers(usersData);
+        setFilteredUsers(usersData.slice(0, PAGE_SIZE)); // Set initial page data
+        setTotalPages(Math.ceil(usersData.length / PAGE_SIZE)); // Update total pages
+      } else {
+        console.error('Unexpected response format');
+        setFilteredUsers([]);
+        setTotalPages(0); // Reset total pages
+      }
     } catch (error) {
       console.error(error);
       toast.error('Failed to fetch users.');
@@ -77,14 +91,12 @@ const UsersPage: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    if (session) {
-      fetchUsers();
-    }
-  }, [session]);
-
   // Handle email modal and actions
   const handleEmailAll = () => {
+    if (session?.user?.role !== 'ADMIN') {
+      setIsAccessDeniedModalOpen(true);
+      return;
+    }
     setIsEmailModalOpen(true);
     setDropdownOpen(false);
   };
@@ -124,7 +136,7 @@ const UsersPage: React.FC = () => {
             widths: ['*', '*', '*', '*'],
             body: [
               ['Name', 'Email', 'Date Joined', 'Role'],
-              ...filteredUsers.map(user => [
+              ...users.map(user => [
                 user.name,
                 user.email,
                 moment(user.createdAt).format('YYYY-MM-DD'),
@@ -159,11 +171,12 @@ const UsersPage: React.FC = () => {
         font: 'Roboto',
       },
     };
-
+  
     pdfMake.vfs = pdfFonts.pdfMake.vfs;
     pdfMake.createPdf(docDefinition).download('users_report.pdf');
     setDropdownOpen(false);
   };
+  
 
   const handleRefresh = () => {
     setIsRefreshing(true);
@@ -171,9 +184,10 @@ const UsersPage: React.FC = () => {
   };
 
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(event.target.value);
+    const searchValue = event.target.value;
+    setSearchTerm(searchValue);
     const filtered = users.filter(user =>
-      user.name.toLowerCase().includes(event.target.value.toLowerCase())
+      user.name.toLowerCase().includes(searchValue.toLowerCase())
     );
     setFilteredUsers(filtered.slice(0, PAGE_SIZE));
     setTotalPages(Math.ceil(filtered.length / PAGE_SIZE));
@@ -186,6 +200,19 @@ const UsersPage: React.FC = () => {
     setFilteredUsers(users.slice(startIndex, endIndex));
     setCurrentPage(page);
   };
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+        setIsEmailModalOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   if (!session) {
     return (
@@ -206,8 +233,8 @@ const UsersPage: React.FC = () => {
 
   return (
     <>
-      <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
-      <div className={`flex transition-all duration-300 ${isSidebarOpen ? 'ml-[25%]' : 'ml-[2%]'} px-4 md:px-8 py-4`}>
+      <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} className='md:hidden' />
+      <div className={`flex transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-0'} px-4 md:px-8 py-4`}>
         <div className="flex-1">
           <div className="mb-4 flex flex-col md:flex-row items-center justify-between">
             <h1 className="text-2xl text-purple-400 mt-6 font-bold">Users List</h1>
@@ -217,9 +244,9 @@ const UsersPage: React.FC = () => {
                 value={searchTerm}
                 onChange={handleSearch}
                 placeholder="Search by name"
-                className="p-2 border border-gray-300 focus:outline-1 bg-slate-100 rounded-md"
+                className="p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 bg-slate-100 rounded-md"
               />
-              <div className="md:hidden" ref={dropdownRef}>
+              <div className="md:hidden relative" ref={dropdownRef}>
                 <button
                   onClick={() => setDropdownOpen(!dropdownOpen)}
                   className="bg-gray-800 text-white p-2 rounded-full hover:bg-gray-700 transition duration-300 flex items-center"
@@ -227,27 +254,24 @@ const UsersPage: React.FC = () => {
                   <FaEllipsisV />
                 </button>
                 {dropdownOpen && (
-                  <div className="absolute right-0 mt-2 bg-white border rounded shadow-lg w-48">
+                  <div className="absolute right-0 mt-2 bg-white border border-gray-300 rounded shadow-lg z-10">
                     <button
                       onClick={handleRefresh}
-                      className="w-full text-left px-4 py-2 hover:bg-blue-50 transition duration-300 flex items-center"
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100 transition duration-300"
                     >
-                      <FaSync className="mr-2 text-blue-500" />
-                      Refresh
+                      <FaSync className="inline-block mr-2" /> Refresh
                     </button>
                     <button
                       onClick={handleEmailAll}
-                      className="w-full text-left px-4 py-2 hover:bg-green-50 transition duration-300 flex items-center"
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100 transition duration-300"
                     >
-                      <FaEnvelope className="mr-2 text-green-500" />
-                      Email All
+                      <FaEnvelope className="inline-block mr-2" /> Email All
                     </button>
                     <button
                       onClick={exportToPDF}
-                      className="w-full text-left px-4 py-2 hover:bg-red-50 transition duration-300 flex items-center"
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100 transition duration-300"
                     >
-                      <FaFilePdf className="mr-2 text-red-500" />
-                      Export as PDF
+                      <FaFilePdf className="inline-block mr-2" /> Export to PDF
                     </button>
                   </div>
                 )}
@@ -277,12 +301,13 @@ const UsersPage: React.FC = () => {
               </div>
             </div>
           </div>
+
           {loading ? (
             <LoadingSpinner />
           ) : (
-            <>
-              <table className="w-full border-collapse border border-gray-300 bg-white rounded-md shadow-md">
-                <thead className="bg-gray-200 text-gray-600">
+            <div className="bg-white rounded-lg shadow-md p-4">
+              <table className="min-w-full bg-white border border-gray-300">
+                <thead>
                   <tr>
                     <th className="border-b border-gray-300 p-3 text-left text-sm font-semibold">Name</th>
                     <th className="border-b border-gray-300 p-3 text-left text-sm font-semibold">Email</th>
@@ -291,80 +316,76 @@ const UsersPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredUsers.length === 0 ? (
-                    <tr>
-                      <td colSpan={4} className="text-center py-4 text-gray-500">No users found</td>
+                  {filteredUsers.map(user => (
+                    <tr key={user.id} className="hover:bg-gray-100">
+                      <td className="border-b border-gray-300 p-3 text-sm font-bold">{user.name}</td>
+                      <td className="border-b border-gray-300 p-3 text-sm font-medium">{user.email}</td>
+                      <td className="border-b border-gray-300 p-3 text-sm font-medium">{moment(user.createdAt).format('YYYY-MM-DD')}</td>
+                      <td className={`border-b border-gray-300 p-3 text-sm font-extrabold ${user.role === 'Admin' ? 'text-green-800 bg-green-100' : 'text-gray-800'}`}>
+                        {user.role}
+                      </td>
                     </tr>
-                  ) : (
-                    filteredUsers.map((user, index) => (
-                      <tr
-                        key={user.id}
-                        className={`hover:bg-gray-50 ${
-                          index % 2 === 0 ? 'bg-purple-100' : 'bg-blue-100'
-                        }`}
-                      >
-                        <td className="border-b border-gray-300 p-3 text-sm">{user.name}</td>
-                        <td className="border-b border-gray-300 p-3 text-sm">{user.email}</td>
-                        <td className="border-b border-gray-300 p-3 text-sm">{moment(user.createdAt).fromNow()}</td>
-                        <td className="border-b border-gray-300 p-3 text-sm">{user.role}</td>
-                      </tr>
-                    ))
-                  )}
+                  ))}
                 </tbody>
               </table>
-              <div className="mt-4 flex justify-between items-center">
-                <button
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  className="bg-gray-300 text-gray-600 py-1 px-3 rounded-md hover:bg-gray-400 transition duration-300"
-                >
-                  Previous
-                </button>
-                <span>
-                  Page {currentPage} of {totalPages}
-                </span>
-                <button
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  className="bg-gray-300 text-gray-600 py-1 px-3 rounded-md hover:bg-gray-400 transition duration-300"
-                >
-                  Next
-                </button>
-              </div>
-            </>
+
+              {totalPages > 1 && (
+                <div className="mt-4 flex justify-center items-center space-x-2">
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="bg-gray-200 px-4 py-2 rounded disabled:opacity-50 flex items-center space-x-1"
+                  >
+                    <FaArrowLeft />
+                    <span>Previous</span>
+                  </button>
+                  <span>{currentPage} / {totalPages}</span>
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="bg-gray-200 px-4 py-2 rounded disabled:opacity-50 flex items-center space-x-1"
+                  >
+                    <span>Next</span>
+                    <FaArrowRight />
+                  </button>
+                </div>
+              )}
+            </div>
           )}
+
+          {/* Email Modal */}
           {isEmailModalOpen && (
-            <div className="fixed inset-0 flex items-center justify-center z-50 bg-gray-800 bg-opacity-50" ref={modalRef}>
-              <div className="bg-white p-6 rounded-lg shadow-lg max-w-lg w-full">
-                <h2 className="text-xl font-bold mb-4">Send Email to Users</h2>
+            <div className="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-50 z-50">
+              <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md" ref={modalRef}>
+                <h2 className="text-lg font-semibold mb-4">Send Email to All Users</h2>
                 <label className="block mb-2">
-                  <span className="text-gray-700">Subject:</span>
+                  Subject:
                   <input
                     type="text"
                     value={emailSubject}
-                    onChange={e => setEmailSubject(e.target.value)}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                    onChange={(e) => setEmailSubject(e.target.value)}
+                    className="w-full mt-1 p-2 border border-gray-300 rounded"
                   />
                 </label>
                 <label className="block mb-4">
-                  <span className="text-gray-700">Body:</span>
+                  Body:
                   <textarea
                     value={emailBody}
-                    onChange={e => setEmailBody(e.target.value)}
-                    rows={5}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                    onChange={(e) => setEmailBody(e.target.value)}
+                    className="w-full mt-1 p-2 border border-gray-300 rounded"
+                    rows={4}
                   />
                 </label>
-                <div className="flex justify-end space-x-4">
+                <div className="flex justify-end">
                   <button
                     onClick={() => setIsEmailModalOpen(false)}
-                    className="bg-gray-500 text-white py-1 px-3 rounded-full hover:bg-gray-600 transition duration-300"
+                    className="bg-gray-300 text-gray-800 px-4 py-2 rounded mr-2"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={sendEmailContent}
-                    className="bg-blue-500 text-white py-1 px-3 rounded-full hover:bg-blue-600 transition duration-300"
+                    className="bg-blue-500 text-white px-4 py-2 rounded"
                   >
                     Send Email
                   </button>
@@ -372,9 +393,27 @@ const UsersPage: React.FC = () => {
               </div>
             </div>
           )}
-          <ToastContainer />
+
+          {/* Access Denied Modal */}
+          {isAccessDeniedModalOpen && (
+            <div className="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-50 z-50">
+              <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+                <h2 className="text-lg font-semibold mb-4 text-red-600">Access Denied</h2>
+                <p>You need to be an Admin to perform this action.</p>
+                <div className="flex justify-end mt-4">
+                  <button
+                    onClick={() => setIsAccessDeniedModalOpen(false)}
+                    className="bg-gray-300 text-gray-800 px-4 py-2 items-center justify-between flex rounded"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
+      <ToastContainer />
     </>
   );
 };

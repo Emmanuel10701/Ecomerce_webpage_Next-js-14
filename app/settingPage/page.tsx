@@ -1,50 +1,44 @@
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
-import Image from "next/image";
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { ArrowBack } from '@mui/icons-material';
 import axios from 'axios';
-import { Autocomplete, TextField, CircularProgress, Snackbar, Alert } from '@mui/material';
+import { Autocomplete, TextField, CircularProgress, Snackbar, Alert, Button } from '@mui/material';
 import Sidebar from '@/components/sidebarSetting/page';
 import { PencilIcon, XMarkIcon, Bars3Icon, CheckCircleIcon } from '@heroicons/react/24/outline';
-import { useSession } from 'next-auth/react';
-import { Button } from '@mui/material';
 
 interface User {
-  id: number;
+  id: string;
   name?: string | null;
   email?: string | null;
   image?: string | null;
   role?: string;
 }
 
-const Modal: React.FC<{ open: boolean; onClose: () => void; title: string; children: React.ReactNode }> = ({ open, onClose, title, children }) => {
-  return (
-    <div className={`fixed inset-0 flex items-center justify-center ${open ? 'block' : 'hidden'} bg-gray-900 bg-opacity-50`} onClick={onClose}>
-      <div className="bg-white w-full max-w-md mx-auto p-4 rounded-lg shadow-lg relative" onClick={e => e.stopPropagation()}>
-        <button onClick={onClose} className="absolute top-2 right-2 text-gray-500 hover:text-gray-800">
-          <XMarkIcon className="w-6 h-6" />
-        </button>
-        <h2 className="text-xl font-bold mb-4">{title}</h2>
-        {children}
-      </div>
+const Modal: React.FC<{ open: boolean; onClose: () => void; title: string; children: React.ReactNode }> = ({ open, onClose, title, children }) => (
+  <div className={`fixed inset-0 flex items-center justify-center ${open ? 'block' : 'hidden'} bg-gray-900 bg-opacity-50`} onClick={onClose}>
+    <div className="bg-white w-full max-w-md mx-auto p-4 rounded-lg shadow-lg relative" onClick={e => e.stopPropagation()}>
+      <button onClick={onClose} className="absolute top-2 right-2 text-gray-500 hover:text-gray-800">
+        <XMarkIcon className="w-6 h-6" />
+      </button>
+      <h2 className="text-xl font-bold mb-4">{title}</h2>
+      {children}
     </div>
-  );
-};
+  </div>
+);
 
 const Settings: React.FC = () => {
   const router = useRouter();
   const [siteName, setSiteName] = useState('');
-  const { data: session, status } = useSession();
   const [siteUrl, setSiteUrl] = useState('');
   const [logo, setLogo] = useState<File | null>(null);
   const [profileImage, setProfileImage] = useState<File | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [modalOpen, setModalOpen] = useState('');
+  const [modalOpen, setModalOpen] = useState<string>('');
   const [employees, setEmployees] = useState<User[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [admins, setAdmins] = useState<User[]>([]);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -62,29 +56,26 @@ const Settings: React.FC = () => {
   const closeModal = () => setModalOpen('');
 
   useEffect(() => {
-    if (status === 'authenticated' && session?.user?.role === 'ADMIN') {
-      axios.get('/api/employees')
-        .then(response => setEmployees(response.data))
-        .catch(error => console.error(error));
+    const fetchData = async () => {
+      try {
+        const [employeesResponse, usersResponse, adminsResponse] = await Promise.all([
+          axios.get('/api/employees'),
+          axios.get('/api/register'),
+          axios.get('/api/admins')
+        ]);
 
-      axios.get('/api/register')
-        .then(response => setUsers(response.data))
-        .catch(error => console.error(error));
+        setEmployees(employeesResponse.data);
+        setUsers(usersResponse.data);
+        setAdmins(adminsResponse.data);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+    };
 
-      axios.get('/api/admins')
-        .then(response => setAdmins(response.data))
-        .catch(error => console.error(error));
-    } else {
-      setShowAccessDenied(true);
-    }
-  }, [status, session]);
+    fetchData();
+  }, []);
 
   const saveChanges = async () => {
-    if (session?.user?.role !== 'ADMIN') {
-      setShowAccessDenied(true);
-      return;
-    }
-
     setLoading(true);
     const formData = new FormData();
     if (profileImage) formData.append('profileImage', profileImage);
@@ -107,11 +98,6 @@ const Settings: React.FC = () => {
   };
 
   const handleAddAdmin = async () => {
-    if (session?.user?.role !== 'ADMIN') {
-      setShowAccessDenied(true);
-      return;
-    }
-
     if (selectedUser) {
       setLoading(true);
       try {
@@ -131,11 +117,6 @@ const Settings: React.FC = () => {
   };
 
   const handleAddEmployee = async () => {
-    if (session?.user?.role !== 'ADMIN') {
-      setShowAccessDenied(true);
-      return;
-    }
-
     if (selectedUser) {
       setLoading(true);
       try {
@@ -154,12 +135,7 @@ const Settings: React.FC = () => {
     }
   };
 
-  const handleRemoveEmployee = async (userId: number) => {
-    if (session?.user?.role !== 'ADMIN') {
-      setShowAccessDenied(true);
-      return;
-    }
-
+  const handleRemoveEmployee = async (userId: string) => {
     setLoading(true);
     try {
       await fetch(`/api/employees/${userId}`, { method: 'DELETE' });
@@ -175,12 +151,7 @@ const Settings: React.FC = () => {
     }
   };
 
-  const handleRemoveAdmin = async (adminId: number) => {
-    if (session?.user?.role !== 'ADMIN') {
-      setShowAccessDenied(true);
-      return;
-    }
-
+  const handleRemoveAdmin = async (adminId: string) => {
     setLoading(true);
     try {
       await fetch(`/api/admins/${adminId}`, { method: 'DELETE' });
@@ -208,27 +179,6 @@ const Settings: React.FC = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
-
-  if (status === 'loading') {
-    return <div className="flex items-center justify-center min-h-screen"><CircularProgress /></div>;
-  }
-
-  if (!session) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-blue-400">
-        <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-sm text-center">
-          <h2 className="text-2xl font-bold mb-4 text-blue-500">Please Log In</h2>
-          <p className="mb-6 text-gray-600">You need to log in to access this page.</p>
-          <button 
-            onClick={() => router.push("/login")} 
-            className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition duration-300"
-          >
-            Go to Login Page
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="flex min-h-screen">
@@ -319,24 +269,23 @@ const Settings: React.FC = () => {
         <div>
           <h3 className="text-lg font-semibold mb-4">Select User</h3>
           <Autocomplete
-            options={users}
-            getOptionLabel={(option) => `${option.name} (${option.email})`}
+            options={Array.isArray(users) ? users : []}
+            getOptionLabel={(option) => `${option.name || 'Unknown'} (${option.email || 'No email'})`}
             value={selectedUser}
             onChange={(event, value) => setSelectedUser(value)}
             renderInput={(params) => <TextField {...params} label="Search User" variant="outlined" fullWidth />}
             renderOption={(props, option) => (
               <li {...props} style={{ fontWeight: selectedUser?.id === option.id ? 'bold' : 'normal' }}>
-                {option.name} ({option.email})
+                {option.name || 'Unknown'} ({option.email || 'No email'})
                 {admins.some(admin => admin.id === option.id) && (
                   <CheckCircleIcon className="w-5 h-5 text-yellow-500 ml-2" />
                 )}
               </li>
             )}
           />
-
           {selectedUser && (
             <div className="mt-4">
-              <p>Selected User: {selectedUser.name}</p>
+              <p>Selected User: {selectedUser.name || 'Unknown'}</p>
               {!admins.some(admin => admin.id === selectedUser.id) ? (
                 <button
                   onClick={handleAddAdmin}
@@ -365,14 +314,14 @@ const Settings: React.FC = () => {
         <div>
           <h3 className="text-lg font-semibold mb-4">Select User</h3>
           <Autocomplete
-            options={users}
-            getOptionLabel={(option) => `${option.name} (${option.email})`}
+            options={Array.isArray(users) ? users : []}
+            getOptionLabel={(option) => `${option.name || 'Unknown'} (${option.email || 'No email'})`}
             value={selectedUser}
             onChange={(event, value) => setSelectedUser(value)}
             renderInput={(params) => <TextField {...params} label="Search User" variant="outlined" fullWidth />}
             renderOption={(props, option) => (
               <li {...props} style={{ fontWeight: selectedUser?.id === option.id ? 'bold' : 'normal' }}>
-                {option.name} ({option.email})
+                {option.name || 'Unknown'} ({option.email || 'No email'})
                 {employees.some(emp => emp.id === option.id) && (
                   <CheckCircleIcon className="w-5 h-5 text-green-500 ml-2" />
                 )}
@@ -381,7 +330,7 @@ const Settings: React.FC = () => {
           />
           {selectedUser && (
             <div className="mt-4">
-              <p>Selected User: {selectedUser.name} ({selectedUser.email})</p>
+              <p>Selected User: {selectedUser.name || 'Unknown'} ({selectedUser.email || 'No email'})</p>
               {employees.some(emp => emp.id === selectedUser.id) ? (
                 <button
                   onClick={() => handleRemoveEmployee(selectedUser.id)}
@@ -415,7 +364,7 @@ const Settings: React.FC = () => {
             <ul>
               {admins.map(admin => (
                 <li key={admin.id} className="flex justify-between text-slate-600 font-bold items-center mb-2">
-                  <span>{admin.name} ({admin.email})</span>
+                  <span>{admin.name || 'Unknown'} ({admin.email || 'No email'})</span>
                 </li>
               ))}
             </ul>
