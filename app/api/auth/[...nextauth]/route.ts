@@ -1,10 +1,28 @@
-import NextAuth, { NextAuthOptions } from "next-auth";
+import NextAuth, { NextAuthOptions, Session, User as NextAuthUser } from "next-auth";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import GithubProvider from "next-auth/providers/github";
 import bcrypt from 'bcrypt';
 import prisma from '../../../../libs/prismadb'; // Adjust the path to your Prisma client
+
+// Extend NextAuth types to include the role
+declare module 'next-auth' {
+  interface Session {
+    user: {
+      name?: string | null;
+      email?: string | null;
+      image?: string | null;
+      role?: string | null; // Add role here
+    };
+  }
+}
+
+declare module 'next-auth/jwt' {
+  interface JWT {
+    role?: string | null; // Add role here if you use JWT for role storage
+  }
+}
 
 const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -89,8 +107,24 @@ const authOptions: NextAuthOptions = {
       }
       return true;
     },
+    async session({ session, token }) {
+      if (session.user?.email) {
+        try {
+          const user = await prisma.user.findUnique({
+            where: { email: session.user.email },
+            select: { role: true }, // Ensure role is selected
+          });
+
+          if (user) {
+            session.user.role = user.role; // Add role to the session
+          }
+        } catch (error) {
+          console.error('Error fetching user role:', error);
+        }
+      }
+      return session;
+    },
     async redirect({ url, baseUrl }) {
-      // Redirect to /analytics after sign-in or if the URL is the base URL or sign-in page
       if (url === baseUrl || url === `${baseUrl}/auth/signin`) {
         return '/analytics';
       }

@@ -10,11 +10,8 @@ import { PencilIcon, XMarkIcon, Bars3Icon, CheckCircleIcon } from '@heroicons/re
 import { useSession } from 'next-auth/react';
 import { Button } from '@mui/material';
 
-
-
-
-
 interface User {
+  id: number;
   name?: string | null;
   email?: string | null;
   image?: string | null;
@@ -35,8 +32,6 @@ const Modal: React.FC<{ open: boolean; onClose: () => void; title: string; child
   );
 };
 
-
-
 const Settings: React.FC = () => {
   const router = useRouter();
   const [siteName, setSiteName] = useState('');
@@ -46,11 +41,11 @@ const Settings: React.FC = () => {
   const [profileImage, setProfileImage] = useState<File | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState('');
-  const [employees, setEmployees] = useState<any[]>([]);
-  const [users, setUsers] = useState<any[]>([]);
-  const [admins, setAdmins] = useState<any[]>([]);
+  const [employees, setEmployees] = useState<User[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [admins, setAdmins] = useState<User[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
@@ -59,38 +54,36 @@ const Settings: React.FC = () => {
 
   const sidebarRef = useRef<HTMLDivElement>(null);
 
-  // Handle sidebar toggle
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
-  // Handle modals
   const handleAddAdminClick = () => setModalOpen('addAdmin');
   const handleAddEmployeeClick = () => setModalOpen('addEmployee');
   const handleViewAdminsClick = () => setModalOpen('viewAdmins');
   const closeModal = () => setModalOpen('');
 
-  // Fetch data from API
   useEffect(() => {
-    if ((session?.user as User)?.role === 'admin') {
+    if (status === 'authenticated' && session?.user?.role === 'ADMIN') {
+      axios.get('/api/employees')
+        .then(response => setEmployees(response.data))
+        .catch(error => console.error(error));
 
-        axios.get('/api/employees')
-          .then(response => setEmployees(response.data))
-          .catch(error => console.error(error));
+      axios.get('/api/register')
+        .then(response => setUsers(response.data))
+        .catch(error => console.error(error));
 
-        axios.get('/api/register')
-          .then(response => setUsers(response.data))
-          .catch(error => console.error(error));
-
-        axios.get('/api/admins')
-          .then(response => setAdmins(response.data))
-          .catch(error => console.error(error));
-    }else {
+      axios.get('/api/admins')
+        .then(response => setAdmins(response.data))
+        .catch(error => console.error(error));
+    } else {
       setShowAccessDenied(true);
     }
-  }, []);
+  }, [status, session]);
 
-  // Save changes
   const saveChanges = async () => {
-    if ((session?.user as User)?.role === 'admin') {
+    if (session?.user?.role !== 'ADMIN') {
+      setShowAccessDenied(true);
+      return;
+    }
 
     setLoading(true);
     const formData = new FormData();
@@ -111,53 +104,42 @@ const Settings: React.FC = () => {
       setLoading(false);
       setSnackbarOpen(true);
     }
-  }else {
-    setShowAccessDenied(true);
-  }
   };
-
-
 
   const handleAddAdmin = async () => {
-    if ((session?.user as User)?.role === 'admin') {
-
-        if (selectedUser) {
-          setLoading(true);
-          try {
-            await axios.post('/api/admins', {
-              name: selectedUser.name,
-              userId: selectedUser.id,
-            });
-            setSnackbarMessage('Admin added successfully');
-            setSnackbarSeverity('success');
-          } catch (err:any) {
-            console.error('Failed to add admin:', err.response?.data || err.message);
-            setSnackbarMessage('Failed to add admin');
-            setSnackbarSeverity('error');
-          } finally {
-            setLoading(false);
-            closeModal();
-            setSnackbarOpen(true);
-          }
-        }
-      }else {
-        setShowAccessDenied(true);
-      }
-  };
-  
-
-
-
-  const handleAddEmployee = async () => {
-    if ((session?.user as User)?.role === 'admin') {
+    if (session?.user?.role !== 'ADMIN') {
+      setShowAccessDenied(true);
+      return;
+    }
 
     if (selectedUser) {
       setLoading(true);
       try {
-        await axios.post('/api/employees', { 
-          name: selectedUser.name,
-          userId: selectedUser.id
-        });
+        await axios.post('/api/admins', { name: selectedUser.name, userId: selectedUser.id });
+        setSnackbarMessage('Admin added successfully');
+        setSnackbarSeverity('success');
+      } catch (err: any) {
+        console.error('Failed to add admin:', err.response?.data || err.message);
+        setSnackbarMessage('Failed to add admin');
+        setSnackbarSeverity('error');
+      } finally {
+        setLoading(false);
+        closeModal();
+        setSnackbarOpen(true);
+      }
+    }
+  };
+
+  const handleAddEmployee = async () => {
+    if (session?.user?.role !== 'ADMIN') {
+      setShowAccessDenied(true);
+      return;
+    }
+
+    if (selectedUser) {
+      setLoading(true);
+      try {
+        await axios.post('/api/employees', { name: selectedUser.name, userId: selectedUser.id });
         setSnackbarMessage('Employee added successfully');
         setSnackbarSeverity('success');
       } catch (error) {
@@ -170,36 +152,34 @@ const Settings: React.FC = () => {
         setSnackbarOpen(true);
       }
     }
-  }else {
-    setShowAccessDenied(true);
-  }
   };
 
-
-
   const handleRemoveEmployee = async (userId: number) => {
-    if ((session?.user as User)?.role === 'admin') {
-
-        setLoading(true);
-        try {
-          await fetch(`/api/employees/${userId}`, { method: 'DELETE' });
-          setSnackbarMessage('Employee removed successfully');
-          setSnackbarSeverity('success');
-        } catch (err) {
-          console.error(err);
-          setSnackbarMessage('Failed to remove employee');
-          setSnackbarSeverity('error');
-        } finally {
-          setLoading(false);
-          setSnackbarOpen(true);
-        }
-      }else {
-        setShowAccessDenied(true);
-      }
+    if (session?.user?.role !== 'ADMIN') {
+      setShowAccessDenied(true);
+      return;
     }
 
+    setLoading(true);
+    try {
+      await fetch(`/api/employees/${userId}`, { method: 'DELETE' });
+      setSnackbarMessage('Employee removed successfully');
+      setSnackbarSeverity('success');
+    } catch (err) {
+      console.error(err);
+      setSnackbarMessage('Failed to remove employee');
+      setSnackbarSeverity('error');
+    } finally {
+      setLoading(false);
+      setSnackbarOpen(true);
+    }
+  };
+
   const handleRemoveAdmin = async (adminId: number) => {
-    if ((session?.user as User)?.role === 'admin') {
+    if (session?.user?.role !== 'ADMIN') {
+      setShowAccessDenied(true);
+      return;
+    }
 
     setLoading(true);
     try {
@@ -214,14 +194,8 @@ const Settings: React.FC = () => {
       setLoading(false);
       setSnackbarOpen(true);
     }
-  }else {
-    setShowAccessDenied(true);
-  }
-  } ;
+  };
 
-
-
-  // Close sidebar if clicked outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (sidebarRef.current && !sidebarRef.current.contains(event.target as Node)) {
@@ -235,8 +209,9 @@ const Settings: React.FC = () => {
     };
   }, []);
 
-
-
+  if (status === 'loading') {
+    return <div className="flex items-center justify-center min-h-screen"><CircularProgress /></div>;
+  }
 
   if (!session) {
     return (
@@ -254,9 +229,9 @@ const Settings: React.FC = () => {
       </div>
     );
   }
+
   return (
     <div className="flex min-h-screen">
-      {/* Sidebar */}
       <Sidebar
         onAddAdminClick={handleAddAdminClick}
         onAddEmployeeClick={handleAddEmployeeClick}
@@ -266,9 +241,7 @@ const Settings: React.FC = () => {
         isAdmin={true}
       />
 
-      {/* Main Content */}
       <div className={`flex-1 p-6 ${sidebarOpen ? 'ml-0' : 'ml-0'} bg-gray-100 relative`}>
-        {/* Hamburger Menu */}
         <button
           onClick={toggleSidebar}
           className="sm:hidden fixed top-4 left-4 p-2 bg-slate-200 text-black rounded-full shadow-lg z-50"
@@ -284,7 +257,6 @@ const Settings: React.FC = () => {
         </button>
         <h1 className="text-3xl font-bold text-center mt-4 mb-6">Dashboard Settings</h1>
         <div className="grid gap-6">
-          {/* Profile Image */}
           <div className="flex items-center justify-center relative">
             <Image
               src={profileImage ? URL.createObjectURL(profileImage) : "/images/default.png"}
@@ -305,7 +277,6 @@ const Settings: React.FC = () => {
             </label>
           </div>
 
-          {/* Site Settings */}
           <div className="flex-col md:flex-row items-center">
             <h2 className="text-xl font-semibold mb-4">Site Settings</h2>
             <input
@@ -344,53 +315,51 @@ const Settings: React.FC = () => {
         </div>
       </div>
 
-      {/* Modals */}
-          <Modal open={modalOpen === 'addAdmin'} onClose={closeModal} title="Add Admin">
-          <div>
-            <h3 className="text-lg font-semibold mb-4">Select User</h3>
-            <Autocomplete
-              options={users}
-              getOptionLabel={(option) => `${option.name} (${option.email})`}
-              value={selectedUser}
-              onChange={(event, value) => setSelectedUser(value)}
-              renderInput={(params) => <TextField {...params} label="Search User" variant="outlined" fullWidth />}
-              renderOption={(props, option) => (
-                <li {...props} style={{ fontWeight: selectedUser?.id === option.id ? 'bold' : 'normal' }}>
-                  {option.name} ({option.email})
-                  {admins.some(admin => admin.userId === option.id) && (
-                    <CheckCircleIcon className="w-5 h-5 text-yellow-500 ml-2" />
-                  )}
-                </li>
-              )}
-            />
-
-            {selectedUser && (
-              <div className="mt-4">
-                <p>Selected User: {selectedUser.name}</p>
-                {!admins.some(admin => admin.userId === selectedUser.id) ? (
-                  <button
-                    onClick={handleAddAdmin}
-                    className="mt-4 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded flex items-center"
-                    disabled={loading}
-                  >
-                    {loading && <CircularProgress size={20} className="mr-2" />}
-                    Add Admin
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => handleRemoveAdmin(selectedUser.id)}
-                    className="mt-4 bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded flex items-center"
-                    disabled={loading}
-                  >
-                    {loading && <CircularProgress size={20} className="mr-2" />}
-                    Remove Admin
-                  </button>
+      <Modal open={modalOpen === 'addAdmin'} onClose={closeModal} title="Add Admin">
+        <div>
+          <h3 className="text-lg font-semibold mb-4">Select User</h3>
+          <Autocomplete
+            options={users}
+            getOptionLabel={(option) => `${option.name} (${option.email})`}
+            value={selectedUser}
+            onChange={(event, value) => setSelectedUser(value)}
+            renderInput={(params) => <TextField {...params} label="Search User" variant="outlined" fullWidth />}
+            renderOption={(props, option) => (
+              <li {...props} style={{ fontWeight: selectedUser?.id === option.id ? 'bold' : 'normal' }}>
+                {option.name} ({option.email})
+                {admins.some(admin => admin.id === option.id) && (
+                  <CheckCircleIcon className="w-5 h-5 text-yellow-500 ml-2" />
                 )}
-              </div>
+              </li>
             )}
-          </div>
-         </Modal>
+          />
 
+          {selectedUser && (
+            <div className="mt-4">
+              <p>Selected User: {selectedUser.name}</p>
+              {!admins.some(admin => admin.id === selectedUser.id) ? (
+                <button
+                  onClick={handleAddAdmin}
+                  className="mt-4 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded flex items-center"
+                  disabled={loading}
+                >
+                  {loading && <CircularProgress size={20} className="mr-2" />}
+                  Add Admin
+                </button>
+              ) : (
+                <button
+                  onClick={() => handleRemoveAdmin(selectedUser.id)}
+                  className="mt-4 bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded flex items-center"
+                  disabled={loading}
+                >
+                  {loading && <CircularProgress size={20} className="mr-2" />}
+                  Remove Admin
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </Modal>
 
       <Modal open={modalOpen === 'addEmployee'} onClose={closeModal} title="Add Employee">
         <div>
@@ -404,7 +373,7 @@ const Settings: React.FC = () => {
             renderOption={(props, option) => (
               <li {...props} style={{ fontWeight: selectedUser?.id === option.id ? 'bold' : 'normal' }}>
                 {option.name} ({option.email})
-                {employees.some(emp => emp.userId === option.id) && (
+                {employees.some(emp => emp.id === option.id) && (
                   <CheckCircleIcon className="w-5 h-5 text-green-500 ml-2" />
                 )}
               </li>
@@ -413,7 +382,7 @@ const Settings: React.FC = () => {
           {selectedUser && (
             <div className="mt-4">
               <p>Selected User: {selectedUser.name} ({selectedUser.email})</p>
-              {employees.some(emp => emp.userId === selectedUser.id) ? (
+              {employees.some(emp => emp.id === selectedUser.id) ? (
                 <button
                   onClick={() => handleRemoveEmployee(selectedUser.id)}
                   className="mt-4 bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded flex items-center"
@@ -437,41 +406,36 @@ const Settings: React.FC = () => {
         </div>
       </Modal>
 
-   <Modal open={modalOpen === 'viewAdmins'} onClose={closeModal} title="View Admins">
-  <div>
-    <h3 className="text-lg font-semibold mb-4 text-center text-purple-600">Admin List</h3>
-    {admins.length === 0 ? (
-      <p className='text-slate-600 text-center'>No admins available.</p>
-    ) : (
-      <ul>
-        {admins.map(admin => (
-          <li key={admin.id} className="flex justify-between text-slate-600 font-bold items-center mb-2">
-            <span>{admin.name} ({admin.email})</span>
-              
-          </li>
-        ))}
-      </ul>
-    )}
-  </div>
-</Modal>
+      <Modal open={modalOpen === 'viewAdmins'} onClose={closeModal} title="View Admins">
+        <div>
+          <h3 className="text-lg font-semibold mb-4 text-center text-purple-600">Admin List</h3>
+          {admins.length === 0 ? (
+            <p className='text-slate-600 text-center'>No admins available.</p>
+          ) : (
+            <ul>
+              {admins.map(admin => (
+                <li key={admin.id} className="flex justify-between text-slate-600 font-bold items-center mb-2">
+                  <span>{admin.name} ({admin.email})</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </Modal>
 
-<Modal open={showAccessDenied} onClose={() => setShowAccessDenied(false)} title="Access Denied">
-  <div className="p-4">
-    <h2 className="text-xl font-semibold mb-4 text-red-600">Access Denied</h2>
-    <p className="mb-4">You are not permitted to perform this operation.</p>
-    <Button
-      onClick={() => setShowAccessDenied(false)}
-      className="bg-blue-500 text-white px-4 py-2 rounded-md"
-    >
-      OK
-    </Button>
-  </div>
-</Modal>
+      <Modal open={showAccessDenied} onClose={() => setShowAccessDenied(false)} title="Access Denied">
+        <div className="p-4">
+          <h2 className="text-xl font-semibold mb-4 text-red-600">Access Denied</h2>
+          <p className="mb-4">You are not permitted to perform this operation.</p>
+          <Button
+            onClick={() => setShowAccessDenied(false)}
+            className="bg-blue-500 text-white px-4 py-2 rounded-md"
+          >
+            OK
+          </Button>
+        </div>
+      </Modal>
 
-
-
-
-      {/* Snackbar for notifications */}
       <Snackbar
         open={snackbarOpen}
         autoHideDuration={6000}
