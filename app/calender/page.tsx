@@ -355,7 +355,7 @@ const CalendarPage: React.FC = () => {
                 <AiOutlineClose size={24} />
               </IconButton>
             </div>
-            <p className="mb-4 text-gray-700">
+            <p className="mb-4 text-gray-700 ">
               Here is the list of all upcoming events. You can also delete events directly from this list.
             </p>
             <ul className="flex-1 overflow-y-auto">

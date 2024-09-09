@@ -83,7 +83,7 @@ const CheckoutPage: React.FC = () => {
       // You might handle the form submission within the CheckoutCard component
     } else if (paymentMethod === 'mpesa') {
       try {
-        const response = await fetch('/api/mpesa-checkout', {
+        const response = await fetch('/api/checkout', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -98,7 +98,7 @@ const CheckoutPage: React.FC = () => {
         console.log('M-Pesa Response:', result);
 
         // Assuming you have an endpoint to update payment status after M-Pesa payment
-        await fetch('/api/update-payment-status', {
+        await fetch('/api/mpesa', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

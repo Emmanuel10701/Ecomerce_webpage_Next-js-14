@@ -64,7 +64,7 @@ const SubscribersPage: React.FC = () => {
   const fetchUsers = async (page: number) => {
     try {
       setLoading(true);
-      const response = await axios.get(`/api/subscribers?page=${page}&limit=${PAGE_SIZE}`);
+      const response = await axios.get(`/api/subs?page=${page}&limit=${PAGE_SIZE}`);
       setUsers(response.data.users);
       setTotalUsers(response.data.total);
       setLoading(false);
