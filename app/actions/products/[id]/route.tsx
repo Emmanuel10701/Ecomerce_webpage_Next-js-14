@@ -1,5 +1,7 @@
-import { NextApiRequest, NextApiResponse } from 'next';
+import { NextResponse } from 'next/server';
+import prisma from '../../../../libs/prismadb'; // Adjust the path to your Prisma client
 
+// Define the Product interface
 interface Product {
   id: string;
   name: string;
@@ -12,44 +14,40 @@ interface Product {
   createdAt: string;
 }
 
-// Simulated in-memory database
-const products: Product[] = [
-  {
-    id: '1',
-    name: 'Product 1',
-    description: 'Description of Product 1',
-    price: 29.99,
-    oldPrice: 39.99,
-    isFlashSale: true,
-    ratings: 4.5,
-    image: 'https://via.placeholder.com/150',
-    createdAt: new Date().toISOString(),
-  },
-  // Add more products as needed
-];
+// Handler function for API routes
+export async function handler(req: Request, { params }: { params: { id: string } }) {
+  const { id } = params;
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method === 'GET') {
-    res.status(200).json(products);
-  } else if (req.method === 'DELETE') {
-    const { id } = req.query;
-    const index = products.findIndex(p => p.id === id);
-    if (index > -1) {
-      products.splice(index, 1);
-      res.status(204).end(); // No content to return
+  if (!id) {
+    return NextResponse.json({ error: 'ID is required' }, { status: 400 });
+  }
+
+  try {
+    if (req.method === 'GET') {
+      // Handle GET request to fetch product by ID
+      const product: Product | null = await prisma.product.findUnique({
+        where: { id: String(id) },
+      });
+
+      if (!product) {
+        return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+      }
+
+      return NextResponse.json(product);
+
+    } else if (req.method === 'DELETE') {
+      // Handle DELETE request to delete product by ID
+      const deletedProduct: Product = await prisma.product.delete({
+        where: { id: String(id) },
+      });
+
+      return NextResponse.json(deletedProduct);
+
     } else {
-      res.status(404).json({ error: 'Product not found' });
+      return NextResponse.json({ error: 'Method Not Allowed' }, { status: 405 });
     }
-  } else if (req.method === 'PUT') {
-    const updatedProduct = req.body as Product;
-    const index = products.findIndex(p => p.id === updatedProduct.id);
-    if (index > -1) {
-      products[index] = updatedProduct;
-      res.status(200).json(updatedProduct);
-    } else {
-      res.status(404).json({ error: 'Product not found' });
-    }
-  } else {
-    res.status(405).json({ error: 'Method Not Allowed' });
+  } catch (error: any) {
+    console.error(`Error handling ${req.method} request:`, error);
+    return NextResponse.json({ error: `Error handling ${req.method} request`, details: error.message }, { status: 500 });
   }
 }

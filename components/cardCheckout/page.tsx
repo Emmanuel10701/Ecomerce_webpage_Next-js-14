@@ -4,12 +4,13 @@ import React, { useState } from 'react';
 import { useStripe, useElements, CardNumberElement, CardExpiryElement, CardCvcElement, Elements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 
+// Replace with your actual publishable key from Stripe
 const stripePromise = loadStripe('your-publishable-key-here');
 
-const CheckoutCard: React.FC<{ paymentMethod: 'card' | 'mpesa' }> = ({ paymentMethod }) => {
+const CheckoutCard: React.FC = () => {
   const stripe = useStripe();
   const elements = useElements();
-
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'mpesa'>('card');
   const [error, setError] = useState<string | null>(null);
 
   const handleCheckout = async (event: React.FormEvent) => {
@@ -29,24 +30,39 @@ const CheckoutCard: React.FC<{ paymentMethod: 'card' | 'mpesa' }> = ({ paymentMe
         return;
       }
 
-      const { token, error } = await stripe.createToken(cardNumberElement);
+      const { paymentMethod: paymentMethodResponse, error } = await stripe.createPaymentMethod({
+        type: 'card',
+        card: cardNumberElement,
+      });
 
       if (error) {
-        console.error('Stripe token creation error:', error);
-        setError('Error creating payment token.');
+        console.error('Stripe payment method creation error:', error);
       } else {
-        console.log('Received Stripe token:', token);
+        console.log('Received Stripe payment method:', paymentMethodResponse);
         alert('Checkout functionality is not implemented yet.');
+        // Here you would typically send the paymentMethod.id to your server
       }
     }
   };
 
   return (
-    <>
-      {paymentMethod === 'card' && (
-        <div className="bg-white p-6 rounded-lg shadow-lg mt-6">
-          <h2 className="text-2xl font-semibold mb-4 text-gray-800">Payment Information</h2>
-          <form onSubmit={handleCheckout}>
+    <div className="bg-white p-6 rounded-lg shadow-lg mt-6">
+      <h2 className="text-2xl font-semibold mb-4 text-gray-800">Payment Information</h2>
+      <form onSubmit={handleCheckout}>
+        <div className="mb-4">
+          <label className="block text-sm font-semibold text-gray-700 mb-2">Select Payment Method:</label>
+          <select
+            value={paymentMethod}
+            onChange={e => setPaymentMethod(e.target.value as 'card' | 'mpesa')}
+            className="border border-gray-300 p-2 rounded-lg bg-gray-50 w-full"
+          >
+            <option value="card">Card Payment</option>
+            <option value="mpesa">M-Pesa</option>
+          </select>
+        </div>
+
+        {paymentMethod === 'card' && (
+          <>
             <div className="mb-4">
               <label className="block text-sm font-semibold text-gray-700 mb-2">Card Number:</label>
               <div className="border border-gray-300 p-2 rounded-lg bg-gray-50">
@@ -113,27 +129,28 @@ const CheckoutCard: React.FC<{ paymentMethod: 'card' | 'mpesa' }> = ({ paymentMe
                 />
               </div>
             </div>
-            {error && <p className="text-red-600 mb-4">{error}</p>}
-            <div className="mt-6 flex justify-end">
-              <button
-                type="submit"
-                className="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600"
-                disabled={!stripe}
-              >
-                Complete Purchase
-              </button>
-            </div>
-          </form>
+          </>
+        )}
+
+        {error && <p className="text-red-600 mb-4">{error}</p>}
+        <div className="mt-6 flex justify-end">
+          <button
+            type="submit"
+            className="bg-blue-500 text-white px-6 py-3 rounded-lg"
+            disabled={!stripe}
+          >
+            Complete Purchase
+          </button>
         </div>
-      )}
-    </>
+      </form>
+    </div>
   );
 };
 
 // Wrap the component with Elements provider for Stripe
-const StripeWrapper: React.FC<{ paymentMethod: 'card' | 'mpesa' }> = ({ paymentMethod }) => (
+const StripeWrapper: React.FC = () => (
   <Elements stripe={stripePromise}>
-    <CheckoutCard paymentMethod={paymentMethod} />
+    <CheckoutCard />
   </Elements>
 );
 

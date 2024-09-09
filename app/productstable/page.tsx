@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
@@ -7,10 +8,11 @@ import Modal from 'react-modal';
 import Pagination from '@/components/paginationP/page'; // Ensure this is correctly set up with pageSize prop
 import Sidebar from '@/components/sidebar/page'; // Import Sidebar
 import { useSession } from 'next-auth/react';
-import CircularProgress from '@mui/material/CircularProgress'; // Import CircularProgress
+import { useRouter } from 'next/navigation';
+import CircularProgress from '@mui/material/CircularProgress';
 
 interface Product {
-  id: number;
+  id: string;
   name: string;
   description: string;
   price: number;
@@ -41,13 +43,13 @@ const DeleteProductModal: React.FC<DeleteProductModalProps> = ({ isOpen, onReque
     <div className="flex justify-end mt-4">
       <button
         onClick={onDelete}
-        className="bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600 transition duration-300"
+        className="bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600 outline-none focus:outline-black transition duration-300"
       >
         Delete
       </button>
       <button
         onClick={onRequestClose}
-        className="bg-gray-500 text-white py-2 px-4 rounded ml-2 hover:bg-gray-600 transition duration-300"
+        className="bg-gray-500 text-white py-2 px-4 rounded ml-2 hover:bg-gray-600 outline-none focus:outline-black transition duration-300"
       >
         Cancel
       </button>
@@ -74,11 +76,10 @@ const ViewProductModal: React.FC<ViewProductModalProps> = ({ isOpen, onRequestCl
     <p><strong>Description:</strong> {product.description}</p>
     <p><strong>Price:</strong> ${product.price.toFixed(2)}</p>
     <p><strong>Quantity:</strong> {product.quantity}</p>
-    <p><strong>Rating:</strong> {product.starRating}</p>
-    <img src={product.image} alt={product.name} className="w-14 h-14 rounded-lg object-cover mb-4" />
+    <img src={product.image} alt={product.name} className="w-full h-auto mb-4 rounded-lg" />
     <button
       onClick={onRequestClose}
-      className="bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600 transition duration-300"
+      className="bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600 outline-none focus:outline-black transition duration-300"
     >
       Close
     </button>
@@ -86,7 +87,8 @@ const ViewProductModal: React.FC<ViewProductModalProps> = ({ isOpen, onRequestCl
 );
 
 const ListProducts: React.FC = () => {
-  const { data: session } = useSession(); // Fetch session data
+  const { data: session } = useSession();
+  const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -97,22 +99,71 @@ const ListProducts: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isAccessDeniedModalOpen, setIsAccessDeniedModalOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [loading, setLoading] = useState(true); // Loading state
+  const [loading, setLoading] = useState(true);
 
-  const pageSize = 10; // Define the page size here
+  const pageSize = 10;
 
   const fetchProducts = async () => {
-    setLoading(true); // Set loading to true when fetching data
     try {
-      const response = await axios.get('/actions/products'); // Update with your API endpoint
+      const response = await axios.get('/actions/products');
       setProducts(response.data);
       setFilteredProducts(response.data);
     } catch (error) {
       console.error(error);
       toast.error('Failed to fetch products.');
     } finally {
-      setLoading(false); // Set loading to false after fetching data
+      setLoading(false);
     }
+  };
+
+  const fetchProductById = async (id: string) => {
+    try {
+      const response = await axios.get(`/actions/products/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to fetch product.');
+      return null;
+    }
+  };
+
+  const handleDeleteProduct = async () => {
+    if (selectedProduct) {
+      try {
+        await axios.delete(`/actions/products/${selectedProduct.id}`);
+        toast.success('Product deleted successfully!');
+        fetchProducts();
+      } catch (error) {
+        console.error(error);
+        toast.error('Failed to delete product.');
+      } finally {
+        setIsDeleteModalOpen(false);
+      }
+    }
+  };
+
+  const handleOpenModal = async (type: 'view' | 'delete', productId?: string) => {
+    if (type === 'view' && (session?.user as { role?: string })?.role !== 'ADMIN') {
+      setIsAccessDeniedModalOpen(true);
+      return;
+    }
+
+    if (productId) {
+      const product = await fetchProductById(productId);
+      setSelectedProduct(product);
+    }
+
+    if (type === 'view') {
+      setIsViewModalOpen(true);
+    } else {
+      setIsDeleteModalOpen(true);
+    }
+  };
+
+  const handleCloseModals = () => {
+    setIsDeleteModalOpen(false);
+    setIsViewModalOpen(false);
+    setSelectedProduct(null);
   };
 
   useEffect(() => {
@@ -129,40 +180,6 @@ const ListProducts: React.FC = () => {
     setFilteredProducts(filtered);
   }, [searchTerm, products, selectedCategory]);
 
-  const handleDeleteProduct = () => {
-    if (selectedProduct) {
-      axios.delete(`/actions/products/${selectedProduct.id}`)
-        .then(() => {
-          fetchProducts();
-          toast.success('Product deleted successfully!');
-        })
-        .catch((error) => {
-          console.error(error);
-          toast.error('Failed to delete product.');
-        });
-    }
-    setIsDeleteModalOpen(false);
-  };
-
-  const handleOpenModal = (type: 'view' | 'delete', product?: Product) => {
-    if (type === 'view' && (session?.user as { role?: string })?.role !== 'ADMIN') {
-      setIsAccessDeniedModalOpen(true);
-      return;
-    }
-    setSelectedProduct(product || null);
-    if (type === 'view') {
-      setIsViewModalOpen(true);
-    } else {
-      setIsDeleteModalOpen(true);
-    }
-  };
-
-  const handleCloseModals = () => {
-    setIsDeleteModalOpen(false);
-    setIsViewModalOpen(false);
-    setSelectedProduct(null);
-  };
-
   const isAdmin = session?.user?.role === 'ADMIN';
 
   return (
@@ -171,117 +188,127 @@ const ListProducts: React.FC = () => {
       <div className={`flex transition-all duration-300 ${isSidebarOpen ? 'ml-[25%]' : 'ml-[2%]'} px-4 md:px-8 py-4`}>
         <div className="flex-1">
           <div className="mb-4 flex items-center justify-between">
-            <button
-              onClick={() => console.log('Add Product')} // Replace with your add product handler
-              className="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600 transition duration-300"
-            >
-              Add Product
-            </button>
-            <div className="flex flex-col items-center w-full">
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                placeholder="Search products..."
-                className="border p-2 rounded-md w-full max-w-md"
-              />
-              <select
-                value={selectedCategory}
-                onChange={e => setSelectedCategory(e.target.value)}
-                className="border p-2 rounded-md mt-4 w-full max-w-md"
+            {isAdmin && (
+              <button
+                onClick={() => router.push('/create-product')}
+                className="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600 outline-none focus:outline-black transition duration-300"
               >
-                <option value="All">All Categories</option>
-                {/* Add more categories here */}
-                <option value="Electronics">Electronics</option>
-                <option value="Furniture">Furniture</option>
-                <option value="Clothing">Clothing</option>
-                {/* Update this list based on your actual categories */}
-              </select>
-            </div>
+                Add Product
+              </button>
+            )}
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              placeholder="Search products..."
+              className="border p-2 rounded-md w-full max-w-xs mb-2"
+            />
+            <select
+              value={selectedCategory}
+              onChange={e => setSelectedCategory(e.target.value)}
+              className="border p-2 rounded-md w-full max-w-xs"
+            >
+              <option value="All">All Categories</option>
+              <option value="Electronics">Electronics</option>
+              <option value="Furniture">Furniture</option>
+              <option value="Clothing">Clothing</option>
+            </select>
           </div>
           {loading ? (
-            <div className="flex justify-center items-center h-64">
+            <div className="flex justify-center items-center h-96">
               <CircularProgress />
             </div>
           ) : (
-            <>
-              <table className="w-full border-collapse border border-gray-200">
-                <thead>
-                  <tr className="bg-gray-100 dark:bg-gray-700">
-                    <th className="border border-gray-300 p-2">Image</th>
-                    <th className="border border-gray-300 p-2">Name</th>
-                    <th className="border border-gray-300 p-2">Price</th>
-                    <th className="border border-gray-300 p-2">Quantity</th>
-                    <th className="border border-gray-300 p-2">Rating</th>
-                    <th className="border border-gray-300 p-2">Actions</th>
+            <table className="w-full border-collapse border border-gray-200">
+              <thead>
+                <tr className="bg-gray-100 dark:bg-gray-700">
+                  <th className="border border-gray-300 p-2">Image</th>
+                  <th className="border border-gray-300 p-2">Name</th>
+                  <th className="border border-gray-300 p-2">Price</th>
+                  <th className="border border-gray-300 p-2">Quantity</th>
+                  <th className="border border-gray-300 p-2">Rating</th>
+                  <th className="border border-gray-300 p-2">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredProducts.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="text-center p-4">No products found</td>
                   </tr>
-                </thead>
-                <tbody>
-                  {filteredProducts.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="text-center p-4">No products found</td>
-                    </tr>
-                  ) : (
-                    filteredProducts.slice((currentPage - 1) * pageSize, currentPage * pageSize).map(product => (
-                      <tr key={product.id}>
-                        <td className="border border-gray-300 p-2">
-                          <img src={product.image} alt={product.name} className="w-14 h-14 rounded-lg object-cover" />
-                        </td>
-                        <td className="border border-gray-300 p-2">{product.name}</td>
-                        <td className="border border-gray-300 p-2">${product.price.toFixed(2)}</td>
-                        <td className="border border-gray-300 p-2">{product.quantity}</td>
-                        <td className="border border-gray-300 p-2">{product.starRating}</td>
-                        <td className="border border-gray-300 p-2">
+                ) : (
+                  filteredProducts.slice((currentPage - 1) * pageSize, currentPage * pageSize).map(product => (
+                    <tr key={product.id}>
+                      <td className="border border-gray-300 p-2">
+                        <img src={product.image} alt={product.name} className="w-14 h-14 object-cover rounded-lg" />
+                      </td>
+                      <td className="border border-gray-300 p-2">{product.name}</td>
+                      <td className="border border-gray-300 p-2">${product.price.toFixed(2)}</td>
+                      <td className="border border-gray-300 p-2">{product.quantity}</td>
+                      <td className="border border-gray-300 p-2">{product.starRating}</td>
+                      <td className="border border-gray-300 p-2">
+                        <button
+                          onClick={() => handleOpenModal('view', product.id)}
+                          className="bg-blue-500 text-white py-1 px-2 rounded hover:bg-blue-600 outline-none focus:outline-black transition duration-300"
+                        >
+                          View
+                        </button>
+                        {isAdmin && (
                           <button
-                            onClick={() => handleOpenModal('view', product)}
-                            className="bg-blue-500 text-white py-1 px-2 rounded hover:bg-blue-600 transition duration-300"
+                            onClick={() => handleOpenModal('delete', product.id)}
+                            className="bg-red-500 text-white py-1 px-2 rounded ml-2 hover:bg-red-600 outline-none focus:outline-black transition duration-300"
                           >
-                            View
+                            Delete
                           </button>
-                          {isAdmin && (
-                            <button
-                              onClick={() => handleOpenModal('delete', product)}
-                              className="bg-red-500 text-white py-1 px-2 rounded ml-2 hover:bg-red-600 transition duration-300"
-                            >
-                              Delete
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-              <div className="mt-4">
-                <Pagination
-                  currentPage={currentPage}
-                  totalItems={filteredProducts.length}
-                  pageSize={pageSize} // Pass the pageSize here
-                  onPageChange={setCurrentPage}
-                />
-              </div>
-            </>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           )}
+          <div className="mt-4">
+            <Pagination
+              currentPage={currentPage}
+              totalItems={filteredProducts.length}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+            />
+          </div>
         </div>
       </div>
 
       <ToastContainer />
 
-      {selectedProduct && isDeleteModalOpen && (
-        <DeleteProductModal
-          isOpen={isDeleteModalOpen}
-          onRequestClose={handleCloseModals}
-          onDelete={handleDeleteProduct}
-          product={selectedProduct}
-        />
-      )}
-      {selectedProduct && isViewModalOpen && (
-        <ViewProductModal
-          isOpen={isViewModalOpen}
-          onRequestClose={handleCloseModals}
-          product={selectedProduct}
-        />
-      )}
+      <DeleteProductModal
+        isOpen={isDeleteModalOpen}
+        onRequestClose={handleCloseModals}
+        onDelete={handleDeleteProduct}
+        product={selectedProduct || {
+          id: '',
+          name: '',
+          description: '',
+          price: 0,
+          quantity: 0,
+          image: '',
+          starRating: 0,
+          category: ''
+        }}
+      />
+      <ViewProductModal
+        isOpen={isViewModalOpen}
+        onRequestClose={handleCloseModals}
+        product={selectedProduct || {
+          id: '',
+          name: '',
+          description: '',
+          price: 0,
+          quantity: 0,
+          image: '',
+          starRating: 0,
+          category: ''
+        }}
+      />
 
       {isAccessDeniedModalOpen && (
         <Modal
@@ -295,7 +322,7 @@ const ListProducts: React.FC = () => {
           <p>You do not have permission to view this product.</p>
           <button
             onClick={() => setIsAccessDeniedModalOpen(false)}
-            className="bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600 transition duration-300 mt-4"
+            className="bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600 outline-none focus:outline-black transition duration-300 mt-4"
           >
             Close
           </button>
