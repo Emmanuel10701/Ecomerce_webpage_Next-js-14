@@ -107,7 +107,7 @@ const CalendarPage: React.FC = () => {
 
   const handleUpdateEvent = async () => {
     if (eventTitle && eventDate && selectedEventId) {
-      if ((session?.user as User)?.role === 'admin') {
+      if ((session?.user as User)?.role === 'ADMIN') {
         setLoading(true);
         try {
           const updatedEvent: Event = { title: eventTitle, date: eventDate, color: 'green', id: selectedEventId };
@@ -137,7 +137,7 @@ const CalendarPage: React.FC = () => {
   };
 
   const handleDeleteEvent = async (eventId: string) => {
-    if ((session?.user as User)?.role === 'admin') {
+    if ((session?.user as User)?.role === 'ADMIN') {
       setLoading(true);
       try {
         await fetch(`/api/events/${eventId}`, {
@@ -170,7 +170,7 @@ const CalendarPage: React.FC = () => {
   };
 
   const handleAddNotification = () => {
-    if ((session?.user as User)?.role === 'admin') {
+    if ((session?.user as User)?.role === 'ADMIN') {
       const newNotification: Notification = { id: Date.now().toString(), message: 'New Notification' };
       setNotifications([...notifications, newNotification]);
       setNotificationCount(prev => prev + 1);

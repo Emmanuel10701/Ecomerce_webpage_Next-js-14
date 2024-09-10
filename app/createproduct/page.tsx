@@ -289,10 +289,10 @@ const CreateProduct = () => {
           </button>
           <button
             type="button"
-            onClick={() => router.push('/dashboard')}
+            onClick={() => router.push('/productstable')}
             className="py-3 px-6 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-black transition-opacity duration-300"
           >
-            Back to Dashboard
+           Dashboard
           </button>
           <button
             type="submit"

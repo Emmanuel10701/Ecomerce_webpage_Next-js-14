@@ -9,6 +9,8 @@ import Pagination from '@/components/paginationP/page'; // Ensure this is correc
 import Sidebar from '@/components/sidebar/page'; // Import Sidebar
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { FaSync } from 'react-icons/fa';
+import StarRating from '@/components/starRating/page'; // Adjust the import path as needed
 import CircularProgress from '@mui/material/CircularProgress';
 
 interface Product {
@@ -22,6 +24,8 @@ interface Product {
   starRating: number;
   category: string;
 }
+
+
 
 interface DeleteProductModalProps {
   isOpen: boolean;
@@ -95,6 +99,7 @@ const ListProducts: React.FC = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isAccessDeniedModalOpen, setIsAccessDeniedModalOpen] = useState(false);
@@ -102,6 +107,8 @@ const ListProducts: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   const pageSize = 10;
+  const DEFAULT_IMAGE = '/path/to/default-image.jpg'; // Replace with the path to your default image
+
 
   const fetchProducts = async () => {
     try {
@@ -160,6 +167,13 @@ const ListProducts: React.FC = () => {
     }
   };
 
+
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    fetchProducts().finally(() => setIsRefreshing(false));
+  };
+
+
   const handleCloseModals = () => {
     setIsDeleteModalOpen(false);
     setIsViewModalOpen(false);
@@ -190,7 +204,7 @@ const ListProducts: React.FC = () => {
           <div className="mb-4 flex items-center justify-between">
             {isAdmin && (
               <button
-                onClick={() => router.push('/create-product')}
+                onClick={() => router.push('/createproduct')}
                 className="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600 outline-none focus:outline-black transition duration-300"
               >
                 Add Product
@@ -203,6 +217,14 @@ const ListProducts: React.FC = () => {
               placeholder="Search products..."
               className="border p-2 rounded-md w-full max-w-xs mb-2"
             />
+
+                 <button
+                  onClick={handleRefresh}
+                  className="bg-blue-500 text-white py-1.5 px-3 rounded-full hover:bg-blue-600 transition duration-300 flex items-center"
+                >
+                  <FaSync className="mr-2" />
+                  Refresh
+                </button> 
             <select
               value={selectedCategory}
               onChange={e => setSelectedCategory(e.target.value)}
@@ -242,9 +264,11 @@ const ListProducts: React.FC = () => {
                         <img src={product.image} alt={product.name} className="w-14 h-14 object-cover rounded-lg" />
                       </td>
                       <td className="border border-gray-300 p-2">{product.name}</td>
-                      <td className="border border-gray-300 p-2">${product.price.toFixed(2)}</td>
-                      <td className="border border-gray-300 p-2">{product.quantity}</td>
-                      <td className="border border-gray-300 p-2">{product.starRating}</td>
+                      <td className="border border-gray-300 p-2">$ {product.starRating !== undefined && (
+                    <div className="mt-2">
+                      <StarRating rating={product.starRating} />
+                    </div>
+                  )}</td>
                       <td className="border border-gray-300 p-2">
                         <button
                           onClick={() => handleOpenModal('view', product.id)}

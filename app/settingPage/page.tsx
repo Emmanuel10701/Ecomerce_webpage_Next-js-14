@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -7,6 +8,7 @@ import axios from 'axios';
 import { Autocomplete, TextField, CircularProgress, Snackbar, Alert, Button } from '@mui/material';
 import Sidebar from '@/components/sidebarSetting/page';
 import { PencilIcon, XMarkIcon, Bars3Icon, CheckCircleIcon } from '@heroicons/react/24/outline';
+import { useSession } from 'next-auth/react';
 
 interface User {
   id: string;
@@ -38,6 +40,7 @@ const Settings: React.FC = () => {
   const [modalOpen, setModalOpen] = useState<string>('');
   const [employees, setEmployees] = useState<User[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const { data: session } = useSession();
   const [admins, setAdmins] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(false);
@@ -56,26 +59,52 @@ const Settings: React.FC = () => {
   const closeModal = () => setModalOpen('');
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [employeesResponse, usersResponse, adminsResponse] = await Promise.all([
-          axios.get('/api/employees'),
-          axios.get('/api/register'),
-          axios.get('/api/admins')
-        ]);
+    if (session) {
+      const fetchEmployees = async () => {
+  try {
+    const response = await axios.get('/api/employees');
+    setEmployees(response.data);
+  } catch (error) {
+    console.error('Error fetching employees:', error);
+  }
+};
 
-        setEmployees(employeesResponse.data);
-        setUsers(usersResponse.data);
-        setAdmins(adminsResponse.data);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      }
-    };
+const fetchUsers = async () => {
+  try {
+    const response = await axios.get('/api/register');
+    setUsers(response.data);
+  } catch (error) {
+    console.error('Error fetching users:', error);
+  }
+};
 
-    fetchData();
-  }, []);
+const fetchAdmins = async () => {
+  try {
+    const response = await axios.get('/api/admins');
+    setAdmins(response.data);
+  } catch (error) {
+    console.error('Error fetching admins:', error);
+  }
+};
+
+// Call each function separately
+const fetchData = async () => {
+  await fetchEmployees();
+  await fetchUsers();
+  await fetchAdmins();
+};
+
+fetchData();
+
+    }
+  }, [session]);
 
   const saveChanges = async () => {
+    if (session?.user?.role !== 'ADMIN') {
+      setShowAccessDenied(true);
+      return;
+    }
+
     setLoading(true);
     const formData = new FormData();
     if (profileImage) formData.append('profileImage', profileImage);
@@ -98,14 +127,19 @@ const Settings: React.FC = () => {
   };
 
   const handleAddAdmin = async () => {
+    if (session?.user?.role !== 'ADMIN') {
+      setShowAccessDenied(true);
+      return;
+    }
+
     if (selectedUser) {
       setLoading(true);
       try {
         await axios.post('/api/admins', { name: selectedUser.name, userId: selectedUser.id });
         setSnackbarMessage('Admin added successfully');
         setSnackbarSeverity('success');
-      } catch (err: any) {
-        console.error('Failed to add admin:', err.response?.data || err.message);
+      } catch (err) {
+        console.error('Failed to add admin:', err);
         setSnackbarMessage('Failed to add admin');
         setSnackbarSeverity('error');
       } finally {
@@ -117,6 +151,11 @@ const Settings: React.FC = () => {
   };
 
   const handleAddEmployee = async () => {
+    if (session?.user?.role !== 'ADMIN') {
+      setShowAccessDenied(true);
+      return;
+    }
+
     if (selectedUser) {
       setLoading(true);
       try {
@@ -136,9 +175,14 @@ const Settings: React.FC = () => {
   };
 
   const handleRemoveEmployee = async (userId: string) => {
+    if (session?.user?.role !== 'ADMIN') {
+      setShowAccessDenied(true);
+      return;
+    }
+
     setLoading(true);
     try {
-      await fetch(`/api/employees/${userId}`, { method: 'DELETE' });
+      await axios.delete(`/api/employees/${userId}`);
       setSnackbarMessage('Employee removed successfully');
       setSnackbarSeverity('success');
     } catch (err) {
@@ -152,9 +196,14 @@ const Settings: React.FC = () => {
   };
 
   const handleRemoveAdmin = async (adminId: string) => {
+    if (session?.user?.role !== 'ADMIN') {
+      setShowAccessDenied(true);
+      return;
+    }
+
     setLoading(true);
     try {
-      await fetch(`/api/admins/${adminId}`, { method: 'DELETE' });
+      await axios.delete(`/api/admins/${adminId}`);
       setSnackbarMessage('Admin removed successfully');
       setSnackbarSeverity('success');
     } catch (err) {
@@ -269,7 +318,7 @@ const Settings: React.FC = () => {
         <div>
           <h3 className="text-lg font-semibold mb-4">Select User</h3>
           <Autocomplete
-            options={Array.isArray(users) ? users : []}
+            options={users}
             getOptionLabel={(option) => `${option.name || 'Unknown'} (${option.email || 'No email'})`}
             value={selectedUser}
             onChange={(event, value) => setSelectedUser(value)}
@@ -314,7 +363,7 @@ const Settings: React.FC = () => {
         <div>
           <h3 className="text-lg font-semibold mb-4">Select User</h3>
           <Autocomplete
-            options={Array.isArray(users) ? users : []}
+            options={users}
             getOptionLabel={(option) => `${option.name || 'Unknown'} (${option.email || 'No email'})`}
             value={selectedUser}
             onChange={(event, value) => setSelectedUser(value)}
