@@ -316,17 +316,21 @@ const UsersPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredUsers.map(user => (
-                    <tr key={user.id} className="hover:bg-gray-100">
-                      <td className="border-b border-gray-300 p-3 text-sm font-bold">{user.name}</td>
-                      <td className="border-b border-gray-300 p-3 text-sm font-medium">{user.email}</td>
-                      <td className="border-b border-gray-300 p-3 text-sm font-medium">{moment(user.createdAt).format('YYYY-MM-DD')}</td>
-                      <td className={`border-b border-gray-300 p-3 text-sm font-extrabold ${user.role === 'Admin' ? 'text-green-800 bg-green-100' : 'text-gray-800'}`}>
-                        {user.role}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
+                {filteredUsers.map((user, index) => (
+                  <tr
+                    key={user.id}
+                    className={`hover:bg-gray-100 ${index % 2 === 0 ? 'bg-green-50' : 'bg-green-100'}`}
+                  >
+                    <td className="border-b border-gray-300 p-3 text-sm font-bold">{user.name}</td>
+                    <td className="border-b border-gray-300 p-3 text-sm font-medium">{user.email}</td>
+                    <td className="border-b border-gray-300 p-3 text-sm font-medium">{moment(user.createdAt).format('YYYY-MM-DD')}</td>
+                    <td className={`border-b border-gray-300 p-3 text-sm font-extrabold ${user.role === 'Admin' ? 'text-green-800 bg-green-100' : 'text-gray-800'}`}>
+                      {user.role}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+
               </table>
 
               {totalPages > 1 && (

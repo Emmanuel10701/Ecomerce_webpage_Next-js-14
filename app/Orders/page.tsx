@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
@@ -32,22 +32,32 @@ const OrdersPage: React.FC = () => {
   const [loading, setLoading] = useState(false); // Add loading state
   const [dropdownOpen, setDropdownOpen] = useState(false); // State for dropdown menu
   const dropdownRef = useRef<HTMLDivElement>(null); // Ref for dropdown
-  const router = useRouter();
 
   // Function to fetch orders
-  const fetchOrders = async (page: number) => {
+  const fetchOrders = async (page: number, retries = 3) => {
     try {
       setLoading(true);
-      const response = await axios.get(`/api/orders?page=${page}&limit=${PAGE_SIZE}`); // Update with your API endpoint
-      setOrders(response.data.orders); // Adjust based on the response structure
-      setTotalOrders(response.data.total); // Assuming the API returns total order count
-      setLoading(false);
+      const response = await axios.get("/api/orders");
+      setOrders(response.data.orders || []);
+      setTotalOrders(response.data.total || 0);
     } catch (error) {
-      console.error(error);
-      toast.error('Failed to fetch orders.');
+      console.error('Error fetching orders:', error);
+      if (retries > 0) {
+        // Retry the request
+        fetchOrders(page, retries - 1);
+      } else {
+        if (axios.isAxiosError(error)) {
+          toast.error(`Error: ${error.response?.status} - ${error.response?.statusText}`);
+        } else {
+          toast.error('An unexpected error occurred.');
+        }
+        setOrders([]);
+      }
+    } finally {
       setLoading(false);
     }
   };
+  
 
   useEffect(() => {
     fetchOrders(currentPage);
@@ -119,7 +129,7 @@ const OrdersPage: React.FC = () => {
         font: 'Roboto', // Ensure this is available or use a standard font
       },
     };
-  
+
     pdfMake.vfs = pdfFonts.pdfMake.vfs;
     pdfMake.createPdf(docDefinition).download('orders_report.pdf');
     setDropdownOpen(false);
@@ -127,7 +137,7 @@ const OrdersPage: React.FC = () => {
 
   // Handle page change
   const handlePageChange = (page: number) => {
-    setCurrentPage(page);
+    if (page > 0) setCurrentPage(page);
   };
 
   // Handle refresh
@@ -143,7 +153,7 @@ const OrdersPage: React.FC = () => {
 
   return (
     <>
-      <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
+      <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} className='md:hidden' />
       <div className={`flex transition-all ${isSidebarOpen ? 'ml-[25%]' : 'ml-0'}`}>
         <div className="flex-1 p-4">
           <div className="mb-4 flex flex-col md:flex-row items-center justify-between">
@@ -208,13 +218,16 @@ const OrdersPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {orders.length === 0 ? (
+                  {orders && orders.length === 0 ? (
                     <tr>
                       <td colSpan={3} className="text-center p-4">No orders found</td>
                     </tr>
                   ) : (
-                    orders.map(order => (
-                      <tr key={order.id}>
+                    orders.map((order, index) => (
+                      <tr
+                        key={order.id}
+                        className={index % 2 === 0 ? 'bg-orange-50' : 'bg-orange-100'}
+                      >
                         <td className="border border-gray-300 p-2">{order.customerName}</td>
                         <td className="border border-gray-300 p-2">${order.amount.toFixed(2)}</td>
                         <td className="border border-gray-300 p-2">

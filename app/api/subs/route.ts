@@ -32,7 +32,6 @@ export async function POST(req: NextRequest) {
 
   } catch (error: unknown) {
     if (error instanceof Error) {
-      // Log detailed error information
       console.error('Error in POST request:', {
         message: error.message,
         stack: error.stack,
@@ -43,7 +42,6 @@ export async function POST(req: NextRequest) {
         { status: 500 }
       );
     } else {
-      // Log unexpected error type
       console.error('Unexpected error in POST request:', error);
       return NextResponse.json(
         { message: 'Server error', error: 'Unexpected error occurred' },
@@ -61,16 +59,21 @@ export async function GET() {
         id: true,
         email: true,
         createdAt: true,
-        role: true, // Ensure the role field is selected
+        role: true,
       },
     });
 
-    console.log('Retrieved subscribers:', subscribers);
+    // Handle cases where createdAt might be null
+    const formattedSubscribers = subscribers.map(subscriber => ({
+      ...subscriber,
+      createdAt: subscriber.createdAt ?? new Date(), // Provide a default date if createdAt is null
+    }));
 
-    return NextResponse.json(subscribers);
+    console.log('Retrieved subscribers:', formattedSubscribers);
+
+    return NextResponse.json(formattedSubscribers);
   } catch (error: unknown) {
     if (error instanceof Error) {
-      // Log detailed error information
       console.error('Database operation error:', {
         message: error.message,
         stack: error.stack,
@@ -81,7 +84,6 @@ export async function GET() {
         { status: 500 }
       );
     } else {
-      // Log unexpected error type
       console.error('Unexpected error in GET request:', error);
       return NextResponse.json(
         { error: 'Unexpected error occurred' },

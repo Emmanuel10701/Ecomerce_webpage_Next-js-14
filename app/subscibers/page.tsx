@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import LoadingSpinner from '@/components/spinner/page'; 
+import LoadingSpinner from '@/components/spinner/page';
 import Sidebar from '@/components/sidebar/page';
 import moment from 'moment';
 import { FaSync, FaEnvelope, FaFilePdf, FaEllipsisV } from 'react-icons/fa';
@@ -196,7 +196,7 @@ const SubscribersPage: React.FC = () => {
 
   return (
     <>
-      <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
+      <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} className='md:hidden' />
       <div className={`flex transition-all ${isSidebarOpen ? 'ml-[25%]' : 'ml-0'}`}>
         <div className="flex-1 p-4">
           <div className="mb-4 flex flex-col md:flex-row items-center justify-between">
@@ -279,8 +279,11 @@ const SubscribersPage: React.FC = () => {
                       <td colSpan={4} className="text-center p-4">No subscribers found</td>
                     </tr>
                   ) : (
-                    users.map(user => (
-                      <tr key={user.id}>
+                    users.map((user, index) => (
+                      <tr
+                        key={user.id}
+                        className={index % 2 === 0 ? 'bg-yellow-50' : 'bg-yellow-100'}
+                      >
                         <td className="border border-gray-300 p-2">{user.name}</td>
                         <td className="border border-gray-300 p-2">{user.email}</td>
                         <td className="border border-gray-300 p-2">

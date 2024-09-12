@@ -14,21 +14,19 @@ import { useSession, signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import moment from 'moment';
 
-interface Customer {
+interface Employee {
   id: string;
   name: string;
   email: string;
-  phoneNumber: string;
-  address: string;
-  userId: string;
   role: string;
+  dateAdded: string; // Date in ISO 8601 format
 }
 
 const PAGE_SIZE = 10;
 
-const CustomerPage: React.FC = () => {
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
+const EmployeePage: React.FC = () => {
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [filteredEmployees, setFilteredEmployees] = useState<Employee[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
@@ -43,8 +41,7 @@ const CustomerPage: React.FC = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
-
-  // Authentication
+  
   const { data: session, status } = useSession();
   
   const handleLogin = () => {
@@ -56,25 +53,22 @@ const CustomerPage: React.FC = () => {
       setLoading(true);
       return;
     }
-
     if (!session) {
       return;
     }
-
     setLoading(false);
   }, [session, status]);
 
-  // Fetch customers
-  const fetchCustomers = async () => {
+  const fetchEmployees = async () => {
     setLoading(true);
     try {
-      const response = await axios.get('/api/customers');
-      setCustomers(response.data);
+      const response = await axios.get('/api/employees');  // Adjust API endpoint
+      setEmployees(response.data);
       setTotalPages(Math.ceil(response.data.length / PAGE_SIZE));
-      setFilteredCustomers(response.data.slice(0, PAGE_SIZE));
+      setFilteredEmployees(response.data.slice(0, PAGE_SIZE));
     } catch (error) {
       console.error(error);
-      toast.error('Failed to fetch customers.');
+      toast.error('Failed to fetch employees.');
     } finally {
       setLoading(false);
     }
@@ -82,14 +76,12 @@ const CustomerPage: React.FC = () => {
 
   useEffect(() => {
     if (session) {
-      fetchCustomers();
+      fetchEmployees();
     }
   }, [session]);
 
-  // Check if the user is an admin
   const isAdmin = session?.user?.role === 'ADMIN';
 
-  // Handle email modal and actions
   const handleEmailAll = () => {
     if (isAdmin) {
       setIsEmailModalOpen(true);
@@ -100,11 +92,16 @@ const CustomerPage: React.FC = () => {
   };
 
   const sendEmailContent = async () => {
+    if (!emailSubject || !emailBody) {
+      toast.error('Subject and Body are required.');
+      return;
+    }
     try {
       await axios.post('/api/send-email', {
-        emails: filteredCustomers.map(customer => customer.email).join(','),
+        emails: filteredEmployees.map(employee => employee.email).join(','), // Get emails of employees
         subject: emailSubject,
         body: emailBody,
+        senderEmail: session?.user?.email, // Sender's email
       });
       toast.success('Email sent successfully!');
       setIsEmailModalOpen(false);
@@ -119,28 +116,20 @@ const CustomerPage: React.FC = () => {
   const exportToPDF = () => {
     const docDefinition: TDocumentDefinitions = {
       content: [
-        { text: 'Customers Report', style: 'header' },
-        {
-          text: 'This report includes detailed information about all customers.',
-          style: 'intro',
-        },
-        {
-          text: 'Customers Information:',
-          style: 'subheader',
-        },
+        { text: 'Employees Report', style: 'header' },
+        { text: 'This report includes detailed information about all employees.', style: 'intro' },
+        { text: 'Employees Information:', style: 'subheader' },
         {
           table: {
             headerRows: 1,
-            widths: ['*', '*', '*', '*', '*', '*'],
+            widths: ['*', '*', '*', '*'],
             body: [
-              ['Name', 'Email', 'Phone Number', 'Address', 'User ID', 'Role'],
-              ...filteredCustomers.map(customer => [
-                customer.name,
-                customer.email,
-                customer.phoneNumber,
-                customer.address,
-                customer.userId,
-                customer.role,
+              ['Name', 'Email', 'Role', 'Date Added'],
+              ...filteredEmployees.map(employee => [
+                employee.name,
+                employee.email,
+                employee.role,
+                moment(employee.dateAdded).format('MMMM Do YYYY') // Format date
               ]),
             ],
           },
@@ -173,21 +162,22 @@ const CustomerPage: React.FC = () => {
     };
 
     pdfMake.vfs = pdfFonts.pdfMake.vfs;
-    pdfMake.createPdf(docDefinition).download('customers_report.pdf');
+    pdfMake.createPdf(docDefinition).download('employees_report.pdf');
     setDropdownOpen(false);
   };
 
   const handleRefresh = () => {
     setIsRefreshing(true);
-    fetchCustomers().finally(() => setIsRefreshing(false));
+    fetchEmployees().finally(() => setIsRefreshing(false));
   };
 
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(event.target.value);
-    const filtered = customers.filter(customer =>
-      customer.name.toLowerCase().includes(event.target.value.toLowerCase())
+    const term = event.target.value;
+    setSearchTerm(term);
+    const filtered = employees.filter(employee =>
+      employee.name.toLowerCase().includes(term.toLowerCase())
     );
-    setFilteredCustomers(filtered.slice(0, PAGE_SIZE));
+    setFilteredEmployees(filtered.slice(0, PAGE_SIZE));
     setTotalPages(Math.ceil(filtered.length / PAGE_SIZE));
     setCurrentPage(1);
   };
@@ -195,12 +185,12 @@ const CustomerPage: React.FC = () => {
   const handlePageChange = (page: number) => {
     const startIndex = (page - 1) * PAGE_SIZE;
     const endIndex = page * PAGE_SIZE;
-    setFilteredCustomers(customers.slice(startIndex, endIndex));
+    setFilteredEmployees(employees.slice(startIndex, endIndex));
     setCurrentPage(page);
   };
 
   const handleRowClick = (id: string) => {
-    router.push(`/customers/${id}`);
+    router.push(`/employees/${id}`);  // Adjust route
   };
 
   if (!session) {
@@ -226,7 +216,7 @@ const CustomerPage: React.FC = () => {
       <div className={`flex transition-all duration-300 ${isSidebarOpen ? 'ml-[25%]' : 'ml-[2%]'} px-4 md:px-8 py-4`}>
         <div className="flex-1">
           <div className="mb-4 flex flex-col md:flex-row items-center justify-between">
-            <h1 className="text-2xl text-purple-400 mt-6 font-bold">Customers List</h1>
+            <h1 className="text-2xl text-purple-400 mt-6 font-bold">Employees List</h1>
             <div className="relative flex items-center space-x-4 md:space-x-4">
               <input
                 type="text"
@@ -251,167 +241,163 @@ const CustomerPage: React.FC = () => {
                       <FaSync className="mr-2 text-blue-500" />
                       Refresh
                     </button>
-                      <button
-                        onClick={handleEmailAll}
-                        className="w-full text-left px-4 py-2 hover:bg-green-50 transition duration-300 flex items-center"
-                      >
-                        <FaEnvelope className="mr-2 text-green-500" />
-                        Email All
-                      </button>
+                    <button
+                      onClick={handleEmailAll}
+                      className="w-full text-left px-4 py-2 hover:bg-green-50 transition duration-300 flex items-center"
+                    >
+                      <FaEnvelope className="mr-2 text-green-500" />
+                      Email All
+                    </button>
                     <button
                       onClick={exportToPDF}
                       className="w-full text-left px-4 py-2 hover:bg-red-50 transition duration-300 flex items-center"
                     >
                       <FaFilePdf className="mr-2 text-red-500" />
-                      Export as PDF
+                      Export PDF
                     </button>
                   </div>
                 )}
               </div>
-              <div className="hidden md:flex items-center space-x-4">
+              <div className="hidden md:flex space-x-4">
                 <button
                   onClick={handleRefresh}
-                  className="bg-gray-800 text-white p-2 rounded hover:bg-gray-700 transition duration-300 flex items-center"
+                  className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition duration-300 flex items-center"
                 >
                   <FaSync className="mr-2" />
                   Refresh
                 </button>
-                  <button
-                    onClick={handleEmailAll}
-                    className="bg-green-500 text-white p-2 rounded hover:bg-green-600 transition duration-300 flex items-center"
-                  >
-                    <FaEnvelope className="mr-2" />
-                    Email All
-                  </button>
+                <button
+                  onClick={handleEmailAll}
+                  className="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600 transition duration-300 flex items-center"
+                >
+                  <FaEnvelope className="mr-2" />
+                  Email All
+                </button>
                 <button
                   onClick={exportToPDF}
-                  className="bg-red-500 text-white p-2 rounded hover:bg-red-600 transition duration-300 flex items-center"
+                  className="bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600 transition duration-300 flex items-center"
                 >
                   <FaFilePdf className="mr-2" />
-                  Export as PDF
+                  Export PDF
                 </button>
               </div>
             </div>
           </div>
+
           {loading ? (
             <LoadingSpinner />
           ) : (
-            <div>
-              <table className="min-w-full bg-white border border-gray-200 rounded-md shadow-md">
-                <thead>
-                  <tr>
-                    <th className="py-2 px-4 border-b text-sm">Name</th>
-                    <th className="py-2 px-4 border-b text-sm">Email</th>
-                    <th className="py-2 px-4 border-b text-sm">Phone Number</th>
-                    <th className="py-2 px-4 border-b text-sm">Address</th>
-                    <th className="py-2 px-4 border-b text-sm">User ID</th>
-                    <th className="py-2 px-4 border-b text-sm">Role</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredCustomers.map((customer, index) => (
-                    <tr
-                      key={customer.id}
-                      onClick={() => handleRowClick(customer.id)}
-                      className={`cursor-pointer hover:bg-white ${index % 2 === 0 ? 'bg-green-100' : 'bg-slate-100'}`}
-                    >
-                      <td className="py-2 px-4 border-b text-sm">{customer.name}</td>
-                      <td className="py-2 px-4 border-b text-sm">{customer.email}</td>
-                      <td className="py-2 px-4 border-b text-sm">{customer.phoneNumber}</td>
-                      <td className="py-2 px-4 border-b text-sm">{customer.address}</td>
-                      <td className="py-2 px-4 border-b text-sm">{customer.userId}</td>
-                      <td className="py-2 px-4 border-b text-sm">{customer.role}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              <div className="mt-4 flex justify-between items-center">
-                <button
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition duration-300"
-                >
-                  Previous
-                </button>
-                <span className="text-gray-600">
-                  Page {currentPage} of {totalPages}
-                </span>
-                <button
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition duration-300"
-                >
-                  Next
-                </button>
+            <table className="w-full bg-white border border-gray-200 rounded-lg shadow-md">
+              <thead>
+                <tr className="bg-gray-200 border-b border-gray-300">
+                  <th className="py-2 px-4 text-left">Name</th>
+                  <th className="py-2 px-4 text-left">Email</th>
+                  <th className="py-2 px-4 text-left">Role</th>
+                  <th className="py-2 px-4 text-left">Date Added</th>
+                </tr>
+              </thead>
+              <tbody>
+    {filteredEmployees.map((employee, index) => (
+      <tr
+        key={employee.id}
+        onClick={() => handleRowClick(employee.id)}
+        className={`cursor-pointer ${index % 2 === 0 ? 'bg-indigo-50' : 'bg-indigo-100'} hover:bg-indigo-200`}
+      >
+        <td className="py-2 px-4">{employee.name}</td>
+        <td className="py-2 px-4">{employee.email}</td>
+        <td className="py-2 px-4">{employee.role}</td>
+        <td className="py-2 px-4">{moment(employee.dateAdded).format('MMMM Do YYYY')}</td>
+      </tr>
+    ))}
+  </tbody>
+            </table>
+          )}
+
+          {/* Pagination */}
+          <div className="flex justify-between items-center mt-4">
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400 transition duration-300"
+            >
+              Previous
+            </button>
+            <span>Page {currentPage} of {totalPages}</span>
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400 transition duration-300"
+            >
+              Next
+            </button>
+          </div>
+
+          {/* Email Modal */}
+          {isEmailModalOpen && (
+            <div
+              ref={modalRef}
+              className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50"
+            >
+              <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-lg">
+                <h2 className="text-2xl font-bold mb-4">Send Email to All Employees</h2>
+                <input
+                  type="text"
+                  value={emailSubject}
+                  onChange={(e) => setEmailSubject(e.target.value)}
+                  placeholder="Subject"
+                  className="p-2 border border-gray-300 rounded-md w-full mb-4"
+                />
+                <textarea
+                  value={emailBody}
+                  onChange={(e) => setEmailBody(e.target.value)}
+                  placeholder="Body"
+                  rows={5}
+                  className="p-2 border border-gray-300 rounded-md w-full mb-4"
+                />
+                <div className="flex justify-end space-x-4">
+                  <button
+                    onClick={() => setIsEmailModalOpen(false)}
+                    className="bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600 transition duration-300"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={sendEmailContent}
+                    className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition duration-300"
+                  >
+                    Send
+                  </button>
+                </div>
               </div>
             </div>
           )}
+
+          {/* Access Denied Modal */}
+          {showAccessDenied && (
+            <div
+              ref={modalRef}
+              className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50"
+            >
+              <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-lg">
+                <h2 className="text-2xl font-bold mb-4">Access Denied</h2>
+                <p>You do not have permission to perform this action.</p>
+                <div className="flex justify-end mt-4">
+                  <button
+                    onClick={() => setShowAccessDenied(false)}
+                    className="bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600 transition duration-300"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <ToastContainer />
         </div>
       </div>
-      <ToastContainer />
-      {isEmailModalOpen && (
-        <div
-          ref={modalRef}
-          className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50"
-        >
-          <div className="bg-white p-6 rounded shadow-lg w-full max-w-lg">
-            <h2 className="text-xl font-bold mb-4">Send Email to All Customers</h2>
-            <div className="mb-4">
-              <label className="block text-gray-700 mb-2" htmlFor="email-subject">
-                Subject
-              </label>
-              <input
-                id="email-subject"
-                type="text"
-                value={emailSubject}
-                onChange={(e) => setEmailSubject(e.target.value)}
-                className="p-2 border border-gray-300 w-full rounded-md"
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-gray-700 mb-2" htmlFor="email-body">
-                Body
-              </label>
-              <textarea
-                id="email-body"
-                value={emailBody}
-                onChange={(e) => setEmailBody(e.target.value)}
-                className="p-2 border border-gray-300 w-full h-32 rounded-md"
-              />
-            </div>
-            <div className="flex justify-end">
-              <button
-                onClick={sendEmailContent}
-                className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition duration-300 mr-2"
-              >
-                Send Email
-              </button>
-              <button
-                onClick={() => setIsEmailModalOpen(false)}
-                className="bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600 transition duration-300"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      {showAccessDenied && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-gray-800 bg-opacity-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg max-w-lg w-full text-center">
-            <h2 className="text-xl font-bold mb-4">Access Denied</h2>
-            <p className="mb-4">You do not have permission to perform this action.</p>
-            <button
-              onClick={() => setShowAccessDenied(false)}
-              className="bg-blue-500 text-white py-1 px-3 rounded-full hover:bg-blue-600 transition duration-300"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
     </>
   );
 };
 
-export default CustomerPage;
+export default EmployeePage;

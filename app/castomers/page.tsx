@@ -69,7 +69,7 @@ const CustomerPage: React.FC = () => {
   const fetchCustomers = async () => {
     setLoading(true);
     try {
-      const response = await axios.get('/api/customers');
+      const response = await axios.get('/api/castomers');
       setCustomers(response.data);
       setTotalPages(Math.ceil(response.data.length / PAGE_SIZE));
       setFilteredCustomers(response.data.slice(0, PAGE_SIZE));
@@ -88,7 +88,7 @@ const CustomerPage: React.FC = () => {
   }, [session]);
 
   // Check if the user is an admin
-  const isAdmin = session?.user?.role === 'admin';
+  const isAdmin = session?.user?.role === 'ADMIN';
 
   // Handle email modal and actions
   const handleEmailAll = () => {
@@ -99,6 +99,23 @@ const CustomerPage: React.FC = () => {
       toast.error('You do not have permission to send emails.');
     }
   };
+
+
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+  
+    document.addEventListener('mousedown', handleClickOutside);
+  
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+  
 
   const sendEmailContent = async () => {
     try {
@@ -207,7 +224,7 @@ const CustomerPage: React.FC = () => {
 
   const handleDeleteCustomer = async (id: string) => {
     try {
-      await axios.delete(`/api/customers/${id}`);
+      await axios.delete(`/api/castomers/${id}`);
       toast.success('Customer deleted successfully!');
       // Refresh customer list or remove customer from state
       fetchCustomers();
@@ -250,36 +267,41 @@ const CustomerPage: React.FC = () => {
                 placeholder="Search by name"
                 className="p-2 border border-gray-300 focus:outline-1 focus:bg-slate-100 rounded-md"
               />
-              <div className="md:hidden" ref={dropdownRef}>
-                <button
-                  onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className="bg-gray-800 text-white p-2 rounded-full hover:bg-gray-700 transition duration-300 flex items-center"
-                >
-                <FaEllipsisV />
-                </button>
-                {dropdownOpen && (
-                  <div className="absolute right-0 mt-2 bg-white border rounded shadow-lg w-48">
-                    <button
-                      onClick={handleRefresh}
-                      className="w-full text-left px-4 py-2 hover:bg-blue-100 transition duration-300"
-                    >
-                      {isRefreshing ? 'Refreshing...' : 'Refresh'}
-                    </button>
-                    <button
-                      onClick={handleEmailAll}
-                      className="w-full text-left px-4 py-2 hover:bg-blue-100 transition duration-300"
-                    >
-                      Send Email
-                    </button>
-                    <button
-                      onClick={exportToPDF}
-                      className="w-full text-left px-4 py-2 hover:bg-blue-100 transition duration-300"
-                    >
-                      Export to PDF
-                    </button>
-                  </div>
-                )}
-              </div>
+              <div className="hidden md:flex items-center  space-x-4">
+  <button
+    onClick={() => setDropdownOpen(!dropdownOpen)}
+    className="bg-gray-800 text-white p-2 rounded-full hover:bg-gray-700 transition duration-300 flex items-center"
+  >
+    <FaEllipsisV />
+  </button>
+  {dropdownOpen && (
+  <div
+    ref={dropdownRef}
+    className="absolute right-0 mt-2 bg-white border rounded shadow-lg w-48"
+  >
+    <button
+      onClick={handleRefresh}
+      className="w-full text-left px-4 py-2 hover:bg-blue-100 transition duration-300"
+    >
+      {isRefreshing ? 'Refreshing...' : 'Refresh'}
+    </button>
+    <button
+      onClick={handleEmailAll}
+      className="w-full text-left px-4 py-2 hover:bg-blue-100 transition duration-300"
+    >
+      Send Email
+    </button>
+    <button
+      onClick={exportToPDF}
+      className="w-full text-left px-4 py-2 hover:bg-blue-100 transition duration-300"
+    >
+      Export to PDF
+    </button>
+  </div>
+)}
+
+</div>
+
             </div>
           </div>
 
@@ -300,30 +322,37 @@ const CustomerPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredCustomers.map(customer => (
-                    <tr key={customer.id} onClick={() => handleRowClick(customer)} className="cursor-pointer hover:bg-gray-100">
-                      <td className="p-2">{customer.name}</td>
-                      <td className="p-2">{customer.email}</td>
-                      <td className="p-2">{customer.phoneNumber}</td>
-                      <td className="p-2">{customer.address}</td>
-                      <td className="p-2">{customer.userId}</td>
-                      <td className="p-2">{customer.role}</td>
-                      {isAdmin && (
-                        <td className="p-2">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation(); // Prevent triggering row click
-                              handleDeleteCustomer(customer.id);
-                            }}
-                            className="text-red-500 hover:text-red-700 transition duration-300"
-                          >
-                            <FaTrash />
-                          </button>
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
+  {filteredCustomers.map((customer, index) => (
+    <tr
+      key={customer.id}
+      onClick={() => handleRowClick(customer)}
+      className={`cursor-pointer hover:bg-blue-100 ${
+        index % 2 === 0 ? 'bg-blue-50' : 'bg-blue-100'
+      }`}
+    >
+      <td className="p-2">{customer.name}</td>
+      <td className="p-2">{customer.email}</td>
+      <td className="p-2">{customer.phoneNumber}</td>
+      <td className="p-2">{customer.address}</td>
+      <td className="p-2">{customer.userId}</td>
+      <td className="p-2">{customer.role}</td>
+      {isAdmin && (
+        <td className="p-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation(); // Prevent triggering row click
+              handleDeleteCustomer(customer.id);
+            }}
+            className="text-red-500 hover:text-red-700 transition duration-300"
+          >
+            <FaTrash />
+          </button>
+        </td>
+      )}
+    </tr>
+  ))}
+</tbody>
+
               </table>
             </div>
           )}
