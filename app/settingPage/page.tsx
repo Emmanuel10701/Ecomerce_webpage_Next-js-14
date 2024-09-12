@@ -1,8 +1,8 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { useSession, signIn } from 'next-auth/react';
-import { FaEdit, FaTrash, FaUserPlus } from "react-icons/fa";
+import { useSession } from 'next-auth/react';
+import { FaEdit, FaTrash, FaUserPlus, FaCheckCircle } from "react-icons/fa";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -11,13 +11,13 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import Button from '@mui/material/Button';
+import { useRouter } from 'next/navigation';
 
 interface User {
     id: string;
     name: string;
     email: string;
-    dateJoined?: string;
-    role?: string;
+    role: string;
 }
 
 const UserManagement: React.FC = () => {
@@ -29,24 +29,25 @@ const UserManagement: React.FC = () => {
     const [actionType, setActionType] = useState<'addAdmin' | 'addEmployee' | 'removeAdmin' | 'removeEmployee'>('addAdmin');
     const [showActionModal, setShowActionModal] = useState<boolean>(false);
     const [showAccessDeniedModal, setShowAccessDeniedModal] = useState<boolean>(false);
+    const [showRoleConflictModal, setShowRoleConflictModal] = useState<boolean>(false);
+    const [searchQuery, setSearchQuery] = useState<string>('');
     const { data: session, status } = useSession();
     const [loading, setLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 5;
+    const router = useRouter();
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [employeesData, adminsData, usersData] = await Promise.all([
-                    axios.get('/api/employees'),
-                    axios.get('/api/admins'),
-                    axios.get('/api/register'),
-                ]);
+                const { data: usersData } = await axios.get('/api/register');
+                setUsers(Array.isArray(usersData.data) ? usersData.data : []);
 
-                const usersArray = Array.isArray(usersData.data) ? usersData.data : [];
-                setEmployees(employeesData.data);
-                setAdmins(adminsData.data);
-                setUsers(usersArray);
+                const adminsData = usersData.data.filter((user: User) => user.role === 'ADMIN');
+                const employeesData = usersData.data.filter((user: User) => user.role === 'STAFF');
+
+                setAdmins(adminsData);
+                setEmployees(employeesData);
             } catch (error) {
                 console.error('Error fetching data', error);
                 toast.error('Failed to fetch data.');
@@ -60,11 +61,6 @@ const UserManagement: React.FC = () => {
             return;
         }
 
-        if (!session) {
-            signIn();
-            return;
-        }
-
         if (session?.user?.role !== 'ADMIN') {
             setShowAccessDeniedModal(true);
             return;
@@ -73,6 +69,10 @@ const UserManagement: React.FC = () => {
         fetchData();
     }, [status, session]);
 
+    const handleLogin = () => {
+        router.push('/login');
+    };
+
     const handleAction = async () => {
         if (!selectedUser) {
             toast.warning('Please select a user before performing an action.');
@@ -80,6 +80,17 @@ const UserManagement: React.FC = () => {
         }
 
         try {
+            const userRole = selectedUser.role;
+
+            if (actionType === 'addAdmin' && userRole === 'ADMIN') {
+                setShowRoleConflictModal(true);
+                return;
+            }
+            if (actionType === 'addEmployee' && userRole === 'STAFF') {
+                setShowRoleConflictModal(true);
+                return;
+            }
+
             if (actionType === 'addAdmin') {
                 await axios.post(`/api/admins`, { userId: selectedUser.id });
                 toast.success('User added as admin successfully.');
@@ -95,14 +106,13 @@ const UserManagement: React.FC = () => {
             }
 
             setShowActionModal(false);
-            const [employeesData, adminsData, usersData] = await Promise.all([
-                axios.get('/api/employees'),
-                axios.get('/api/admins'),
-                axios.get('/api/register'),
-            ]);
-            setEmployees(employeesData.data);
-            setAdmins(adminsData.data);
-            setUsers(usersData.data);
+            // Fetch updated user list
+            const { data: usersData } = await axios.get('/api/register');
+            const adminsData = usersData.data.filter((user: User) => user.role === 'ADMIN');
+            const employeesData = usersData.data.filter((user: User) => user.role === 'STAFF');
+
+            setAdmins(adminsData);
+            setEmployees(employeesData);
         } catch (error) {
             console.error('Error performing action', error);
             toast.error('Failed to perform action.');
@@ -127,15 +137,20 @@ const UserManagement: React.FC = () => {
     const closeActionModal = () => setShowActionModal(false);
     const closeAccessDeniedModal = () => {
         setShowAccessDeniedModal(false);
-        window.history.back();
+        router.back();
     };
+    const closeRoleConflictModal = () => setShowRoleConflictModal(false);
 
     const getCurrentData = () => {
-        if (currentTab === 'employees') return employees;
-        return admins;
+        return currentTab === 'employees' ? employees : admins;
     };
 
-    const dataToDisplay = getCurrentData().slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+    const filteredData = getCurrentData().filter(user =>
+        user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    const dataToDisplay = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     if (loading) {
         return (
@@ -152,7 +167,7 @@ const UserManagement: React.FC = () => {
                     <h2 className="text-2xl font-bold mb-4">Please Log In</h2>
                     <p className="mb-6">You need to log in or register to access this page.</p>
                     <button
-                        onClick={() => signIn()}
+                        onClick={handleLogin}
                         className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition duration-300"
                     >
                         Go to Login Page
@@ -178,6 +193,22 @@ const UserManagement: React.FC = () => {
         );
     }
 
+    if (showRoleConflictModal) {
+        return (
+            <Dialog open={showRoleConflictModal} onClose={closeRoleConflictModal}>
+                <DialogTitle>Role Conflict</DialogTitle>
+                <DialogContent>
+                    <p>{selectedUser?.name} already has the role of {selectedUser?.role}. Please select a different action.</p>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={closeRoleConflictModal} color="primary">
+                        Close
+                    </Button>
+                </DialogActions>
+            </Dialog>
+        );
+    }
+
     return (
         <div className="mx-auto my-10 max-w-4xl px-4">
             <h1 className="text-3xl font-bold text-center mb-6 bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 text-transparent bg-clip-text">
@@ -187,143 +218,135 @@ const UserManagement: React.FC = () => {
                 Manage users and employees here.
             </p>
 
-            <div className="flex flex-col lg:flex-row lg:space-x-8 mb-6">
-                <div className="lg:w-1/3">
-                    <h2 className="text-2xl font-bold mb-4   bg-gradient-to-r from-purple-400 via-blue-500 to-indigo-600 text-transparent bg-clip-text">Change Status</h2>
-                    <div className="mb-4">
-                        <select
-                            className="bg-gray-50 border border-gray-300 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                            value={actionType}
-                            onChange={(e) => setActionType(e.target.value as 'addAdmin' | 'addEmployee' | 'removeAdmin' | 'removeEmployee')}
-                        >
-                            <option value="addAdmin">Add as Admin</option>
-                            <option value="addEmployee">Add as Employee</option>
-                            <option value="removeAdmin">Remove Admin</option>
-                            <option value="removeEmployee">Remove Employee</option>
-                        </select>
-                    </div>
-                    <div className="mb-4">
-                        <select
-                            className="bg-gray-50 border border-gray-300 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                            onChange={(e) => setSelectedUser(users.find(user => user.id === e.target.value) || null)}
-                        >
-                            <option value="">Select a User</option>
-                            {users.length > 0 ? (
-                                users.map(user => (
-                                    <option key={user.id} value={user.id}>
-                                        {user.name} - {user.email}
-                                    </option>
-                                ))
-                            ) : (
-                                <option value="">No users available</option>
-                            )}
-                        </select>
-                    </div>
+            <div className="mb-6">
+                <div className="flex justify-center space-x-4 mb-4">
                     <button
-                        onClick={() => setShowActionModal(true)}
-                        className="bg-blue-500 text-white rounded p-2 text-sm flex items-center"
+                        className={`py-2 px-4 rounded ${currentTab === 'employees' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'} hover:bg-blue-600`}
+                        onClick={() => setCurrentTab('employees')}
                     >
-                        <FaUserPlus className="mr-2" /> Perform Action
+                        Employees
+                    </button>
+                    <button
+                        className={`py-2 px-4 rounded ${currentTab === 'admins' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'} hover:bg-blue-600`}
+                        onClick={() => setCurrentTab('admins')}
+                    >
+                        Admins
                     </button>
                 </div>
 
-                <div className="lg:w-2/3">
-                    <div className="flex justify-between mb-4">
+                <div className="lg:flex lg:space-x-6 mb-8">
+                    <div className="lg:w-1/3">
+                        <div className="mb-4">
+                            <select
+                                className="bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 border border-gray-300 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 text-white"
+                                value={actionType}
+                                onChange={(e) => setActionType(e.target.value as 'addAdmin' | 'addEmployee' | 'removeAdmin' | 'removeEmployee')}
+                            >
+                                <option value="addAdmin">Add as Admin</option>
+                                <option value="addEmployee">Add as Employee</option>
+                                <option value="removeAdmin">Remove Admin</option>
+                                <option value="removeEmployee">Remove Employee</option>
+                            </select>
+                        </div>
+                        <div className="mb-4">
+                            <input
+                                type="text"
+                                placeholder="Search Users"
+                                className="bg-gray-50 border border-gray-300 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                        </div>
+                        <div className="bg-white p-4 rounded-lg shadow-md">
+                            <h3 className="text-xl font-semibold mb-4 bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 text-transparent bg-clip-text">
+                                Select User
+                            </h3>
+                            <select
+                                className="bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 border border-gray-300 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 text-white"
+                                value={selectedUser ? selectedUser.id : ''}
+                                onChange={(e) => {
+                                    const user = users.find(user => user.id === e.target.value);
+                                    setSelectedUser(user || null);
+                                }}
+                            >
+                                <option value="" disabled>Select a user</option>
+                                {users.map(user => (
+                                    <option key={user.id} value={user.id} className="flex items-center space-x-2">
+                                        {user.name} ({user.email})
+                                        {user.role === 'ADMIN' && <FaCheckCircle className="text-green-500 ml-2" />}
+                                        {user.role === 'STAFF' && <FaCheckCircle className="text-blue-500 ml-2" />}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
                         <button
-                            className={`py-2 px-4 mx-2 rounded ${currentTab === 'employees' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-                            onClick={() => setCurrentTab('employees')}
+                            className="mt-4 bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition duration-300"
+                            onClick={() => setShowActionModal(true)}
                         >
-                            Employees
-                        </button>
-                        <button
-                            className={`py-2 px-4 mx-2 rounded ${currentTab === 'admins' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-                            onClick={() => setCurrentTab('admins')}
-                        >
-                            Admins
+                            {actionType === 'addAdmin' || actionType === 'addEmployee' ? 'Add User' : 'Remove User'}
                         </button>
                     </div>
-
-                    <div className="mb-6">
-                        <h2 className="text-2xl font-bold mb-4 bg-gradient-to-r from-blue-400 via-teal-500 to-green-500 text-transparent bg-clip-text">
-                            {currentTab === 'employees' ? 'Employee List' : 'Admin List'}
+                    <div className="lg:w-2/3">
+                        <h2 className="text-2xl font-bold mb-4 bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 text-transparent bg-clip-text">
+                            {currentTab === 'employees' ? 'Employees' : 'Admins'}
                         </h2>
-                        <table className="min-w-full bg-white border border-gray-300 rounded-lg shadow-lg">
-                            <thead>
-                                <tr>
-                                    <th className="py-2 px-4 border-b">Name</th>
-                                    <th className="py-2 px-4 border-b">Email</th>
-                                    {currentTab === 'employees' && <th className="py-2 px-4 border-b">Actions</th>}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {dataToDisplay.length > 0 ? (
-                                    dataToDisplay.map(user => (
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full bg-white border border-gray-200">
+                                <thead className="bg-gray-100">
+                                    <tr>
+                                        <th className="py-2 px-4 border-b">Name</th>
+                                        <th className="py-2 px-4 border-b">Email</th>
+                                        <th className="py-2 px-4 border-b">Role</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {dataToDisplay.map(user => (
                                         <tr key={user.id}>
                                             <td className="py-2 px-4 border-b">{user.name}</td>
                                             <td className="py-2 px-4 border-b">{user.email}</td>
-                                            {currentTab === 'employees' && (
-                                                <td className="py-2 px-4 border-b">
-                                                    <button
-                                                        onClick={() => handleEditEmployee(user)}
-                                                        className="text-blue-500 hover:text-blue-600"
-                                                    >
-                                                        <FaEdit />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDeleteEmployee(user.id)}
-                                                        className="text-red-500 hover:text-red-600 ml-2"
-                                                    >
-                                                        <FaTrash />
-                                                    </button>
-                                                </td>
-                                            )}
+                                            <td className="py-2 px-4 border-b">{user.role}</td>
+                                         
                                         </tr>
-                                    ))
-                                ) : (
-                                    <tr>
-                                        <td colSpan={currentTab === 'employees' ? 3 : 2} className="py-2 px-4 text-center">No data available</td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div className="flex justify-between items-center">
-                        <button
-                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                            className="bg-gray-300 text-gray-700 rounded px-4 py-2"
-                            disabled={currentPage === 1}
-                        >
-                            Previous
-                        </button>
-                        <span>Page {currentPage}</span>
-                        <button
-                            onClick={() => setCurrentPage(prev => prev + 1)}
-                            className="bg-gray-300 text-gray-700 rounded px-4 py-2"
-                            disabled={(currentPage * itemsPerPage) >= getCurrentData().length}
-                        >
-                            Next
-                        </button>
+                                    ))}
+                                </tbody>
+                            </table>
+                            <div className="mt-4 flex justify-between items-center">
+                                <button
+                                    className={`py-2 px-4 rounded transition duration-300 ${currentPage === 1 ? 'bg-gray-300 text-gray-700 cursor-not-allowed' : 'bg-gray-700 text-white hover:bg-gray-600'}`}
+                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                    disabled={currentPage === 1}
+                                >
+                                    Previous
+                                </button>
+                                <span>Page {currentPage} of {Math.ceil(filteredData.length / itemsPerPage)}</span>
+                                <button
+                                    className={`py-2 px-4 rounded transition duration-300 ${currentPage === Math.ceil(filteredData.length / itemsPerPage) ? 'bg-gray-300 text-gray-700 cursor-not-allowed' : 'bg-gray-700 text-white hover:bg-gray-600'}`}
+                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(filteredData.length / itemsPerPage)))}
+                                    disabled={currentPage === Math.ceil(filteredData.length / itemsPerPage)}
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            {showActionModal && (
-                <Dialog open={showActionModal} onClose={closeActionModal}>
-                    <DialogTitle>Confirm Action</DialogTitle>
-                    <DialogContent>
-                        <p>Are you sure you want to {actionType.replace(/([A-Z])/g, ' $1').toLowerCase()} {selectedUser?.name}?</p>
-                    </DialogContent>
-                    <DialogActions>
-                        <Button onClick={handleAction} color="primary">
-                            Confirm
-                        </Button>
-                        <Button onClick={closeActionModal} color="secondary">
-                            Cancel
-                        </Button>
-                    </DialogActions>
-                </Dialog>
-            )}
+            {/* Action Modal */}
+            <Dialog open={showActionModal} onClose={closeActionModal}>
+                <DialogTitle>{actionType.includes('add') ? 'Add User' : 'Remove User'}</DialogTitle>
+                <DialogContent>
+                    <p>Are you sure you want to {actionType.replace(/([A-Z])/g, ' $1').toLowerCase()} {selectedUser?.name}?</p>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={closeActionModal} color="primary">
+                        Cancel
+                    </Button>
+                    <Button onClick={handleAction} color="secondary">
+                        Confirm
+                    </Button>
+                </DialogActions>
+            </Dialog>
 
             <ToastContainer />
         </div>

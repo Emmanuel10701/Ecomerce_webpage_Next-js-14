@@ -25,9 +25,9 @@ model Admin {
 model Employee {
   id     String @id @default(auto()) @map("_id") @db.ObjectId
   name   String
-  createdAt      DateTime        @default(now())
   userId String @db.ObjectId
   role   Role   @default(STAFF)
+  createdAt DateTime @default(now())  // Ensure this is defined
   user   User   @relation(fields: [userId], references: [id])
 }
 

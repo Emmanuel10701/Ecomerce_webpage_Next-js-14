@@ -1,7 +1,6 @@
-// cartContext.tsx
 "use client"; // Ensure this file is treated as client-side
 
-import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useReducer, ReactNode, useEffect, useState } from 'react';
 
 // Define types
 interface CartItem {
@@ -65,6 +64,8 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
 };
 
 const loadCartFromLocalStorage = (): CartState => {
+  if (typeof window === 'undefined') return { items: [] }; // Ensure it's not called on the server-side
+
   const savedCart = localStorage.getItem('cart');
   if (savedCart) {
     try {
@@ -80,10 +81,18 @@ const loadCartFromLocalStorage = (): CartState => {
 };
 
 export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [state, dispatch] = useReducer(cartReducer, loadCartFromLocalStorage());
+  const [initialState, setInitialState] = useState<CartState>({ items: [] });
 
   useEffect(() => {
-    localStorage.setItem('cart', JSON.stringify(state.items));
+    setInitialState(loadCartFromLocalStorage());
+  }, []);
+
+  const [state, dispatch] = useReducer(cartReducer, initialState);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('cart', JSON.stringify(state.items));
+    }
   }, [state.items]);
 
   return (
