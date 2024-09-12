@@ -1,450 +1,333 @@
 "use client";
-
-import React, { useState, useEffect, useRef } from 'react';
-import Image from 'next/image';
-import { useRouter } from 'next/navigation';
-import { ArrowBack } from '@mui/icons-material';
-import axios from 'axios';
-import { Autocomplete, TextField, CircularProgress, Snackbar, Alert, Button } from '@mui/material';
-import Sidebar from '@/components/sidebarSetting/page';
-import { PencilIcon, XMarkIcon, Bars3Icon, CheckCircleIcon } from '@heroicons/react/24/outline';
-import { useSession } from 'next-auth/react';
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { useSession, signIn } from 'next-auth/react';
+import { FaEdit, FaTrash, FaUserPlus } from "react-icons/fa";
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import CircularProgress from '@mui/material/CircularProgress';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogTitle from '@mui/material/DialogTitle';
+import Button from '@mui/material/Button';
 
 interface User {
-  id: string;
-  name?: string | null;
-  email?: string | null;
-  image?: string | null;
-  role?: string;
+    id: string;
+    name: string;
+    email: string;
+    dateJoined?: string;
+    role?: string;
 }
 
-const Modal: React.FC<{ open: boolean; onClose: () => void; title: string; children: React.ReactNode }> = ({ open, onClose, title, children }) => (
-  <div className={`fixed inset-0 flex items-center justify-center ${open ? 'block' : 'hidden'} bg-gray-900 bg-opacity-50`} onClick={onClose}>
-    <div className="bg-white w-full max-w-md mx-auto p-4 rounded-lg shadow-lg relative" onClick={e => e.stopPropagation()}>
-      <button onClick={onClose} className="absolute top-2 right-2 text-gray-500 hover:text-gray-800">
-        <XMarkIcon className="w-6 h-6" />
-      </button>
-      <h2 className="text-xl font-bold mb-4">{title}</h2>
-      {children}
-    </div>
-  </div>
-);
+const UserManagement: React.FC = () => {
+    const [currentTab, setCurrentTab] = useState<'admins' | 'employees'>('employees');
+    const [employees, setEmployees] = useState<User[]>([]);
+    const [admins, setAdmins] = useState<User[]>([]);
+    const [users, setUsers] = useState<User[]>([]);
+    const [selectedUser, setSelectedUser] = useState<User | null>(null);
+    const [actionType, setActionType] = useState<'addAdmin' | 'addEmployee' | 'removeAdmin' | 'removeEmployee'>('addAdmin');
+    const [showActionModal, setShowActionModal] = useState<boolean>(false);
+    const [showAccessDeniedModal, setShowAccessDeniedModal] = useState<boolean>(false);
+    const { data: session, status } = useSession();
+    const [loading, setLoading] = useState(true);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 5;
 
-const Settings: React.FC = () => {
-  const router = useRouter();
-  const [siteName, setSiteName] = useState('');
-  const [siteUrl, setSiteUrl] = useState('');
-  const [logo, setLogo] = useState<File | null>(null);
-  const [profileImage, setProfileImage] = useState<File | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [modalOpen, setModalOpen] = useState<string>('');
-  const [employees, setEmployees] = useState<User[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
-  const { data: session } = useSession();
-  const [admins, setAdmins] = useState<User[]>([]);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState('');
-  const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error'>('success');
-  const [showAccessDenied, setShowAccessDenied] = useState(false);
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const [employeesData, adminsData, usersData] = await Promise.all([
+                    axios.get('/api/employees'),
+                    axios.get('/api/admins'),
+                    axios.get('/api/register'),
+                ]);
 
-  const sidebarRef = useRef<HTMLDivElement>(null);
+                const usersArray = Array.isArray(usersData.data) ? usersData.data : [];
+                setEmployees(employeesData.data);
+                setAdmins(adminsData.data);
+                setUsers(usersArray);
+            } catch (error) {
+                console.error('Error fetching data', error);
+                toast.error('Failed to fetch data.');
+            } finally {
+                setLoading(false);
+            }
+        };
 
-  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
+        if (status === 'loading') {
+            setLoading(true);
+            return;
+        }
 
-  const handleAddAdminClick = () => setModalOpen('addAdmin');
-  const handleAddEmployeeClick = () => setModalOpen('addEmployee');
-  const handleViewAdminsClick = () => setModalOpen('viewAdmins');
-  const closeModal = () => setModalOpen('');
+        if (!session) {
+            signIn();
+            return;
+        }
 
-  useEffect(() => {
-    if (session) {
-      const fetchEmployees = async () => {
-  try {
-    const response = await axios.get('/api/employees');
-    setEmployees(response.data);
-  } catch (error) {
-    console.error('Error fetching employees:', error);
-  }
-};
+        if (session?.user?.role !== 'ADMIN') {
+            setShowAccessDeniedModal(true);
+            return;
+        }
 
-const fetchUsers = async () => {
-  try {
-    const response = await axios.get('/api/register');
-    setUsers(response.data);
-  } catch (error) {
-    console.error('Error fetching users:', error);
-  }
-};
+        fetchData();
+    }, [status, session]);
 
-const fetchAdmins = async () => {
-  try {
-    const response = await axios.get('/api/admins');
-    setAdmins(response.data);
-  } catch (error) {
-    console.error('Error fetching admins:', error);
-  }
-};
+    const handleAction = async () => {
+        if (!selectedUser) {
+            toast.warning('Please select a user before performing an action.');
+            return;
+        }
 
-// Call each function separately
-const fetchData = async () => {
-  await fetchEmployees();
-  await fetchUsers();
-  await fetchAdmins();
-};
+        try {
+            if (actionType === 'addAdmin') {
+                await axios.post(`/api/admins`, { userId: selectedUser.id });
+                toast.success('User added as admin successfully.');
+            } else if (actionType === 'addEmployee') {
+                await axios.post(`/api/employees`, { userId: selectedUser.id });
+                toast.success('User added as employee successfully.');
+            } else if (actionType === 'removeEmployee') {
+                await axios.delete(`/api/employees/${selectedUser.id}`);
+                toast.success('Employee removed successfully.');
+            } else if (actionType === 'removeAdmin') {
+                await axios.delete(`/api/admins/${selectedUser.id}`);
+                toast.success('Admin removed successfully.');
+            }
 
-fetchData();
-
-    }
-  }, [session]);
-
-  const saveChanges = async () => {
-    if (session?.user?.role !== 'ADMIN') {
-      setShowAccessDenied(true);
-      return;
-    }
-
-    setLoading(true);
-    const formData = new FormData();
-    if (profileImage) formData.append('profileImage', profileImage);
-    if (logo) formData.append('logo', logo);
-    formData.append('siteName', siteName);
-    formData.append('siteUrl', siteUrl);
-
-    try {
-      await axios.post('/api/settings', formData);
-      setSnackbarMessage('Changes saved');
-      setSnackbarSeverity('success');
-    } catch (error) {
-      console.error('Error saving changes:', error);
-      setSnackbarMessage('Error saving changes');
-      setSnackbarSeverity('error');
-    } finally {
-      setLoading(false);
-      setSnackbarOpen(true);
-    }
-  };
-
-  const handleAddAdmin = async () => {
-    if (session?.user?.role !== 'ADMIN') {
-      setShowAccessDenied(true);
-      return;
-    }
-
-    if (selectedUser) {
-      setLoading(true);
-      try {
-        await axios.post('/api/admins', { name: selectedUser.name, userId: selectedUser.id });
-        setSnackbarMessage('Admin added successfully');
-        setSnackbarSeverity('success');
-      } catch (err) {
-        console.error('Failed to add admin:', err);
-        setSnackbarMessage('Failed to add admin');
-        setSnackbarSeverity('error');
-      } finally {
-        setLoading(false);
-        closeModal();
-        setSnackbarOpen(true);
-      }
-    }
-  };
-
-  const handleAddEmployee = async () => {
-    if (session?.user?.role !== 'ADMIN') {
-      setShowAccessDenied(true);
-      return;
-    }
-
-    if (selectedUser) {
-      setLoading(true);
-      try {
-        await axios.post('/api/employees', { name: selectedUser.name, userId: selectedUser.id });
-        setSnackbarMessage('Employee added successfully');
-        setSnackbarSeverity('success');
-      } catch (error) {
-        console.error('Error adding employee:', error);
-        setSnackbarMessage('Failed to add employee');
-        setSnackbarSeverity('error');
-      } finally {
-        setLoading(false);
-        closeModal();
-        setSnackbarOpen(true);
-      }
-    }
-  };
-
-  const handleRemoveEmployee = async (userId: string) => {
-    if (session?.user?.role !== 'ADMIN') {
-      setShowAccessDenied(true);
-      return;
-    }
-
-    setLoading(true);
-    try {
-      await axios.delete(`/api/employees/${userId}`);
-      setSnackbarMessage('Employee removed successfully');
-      setSnackbarSeverity('success');
-    } catch (err) {
-      console.error(err);
-      setSnackbarMessage('Failed to remove employee');
-      setSnackbarSeverity('error');
-    } finally {
-      setLoading(false);
-      setSnackbarOpen(true);
-    }
-  };
-
-  const handleRemoveAdmin = async (adminId: string) => {
-    if (session?.user?.role !== 'ADMIN') {
-      setShowAccessDenied(true);
-      return;
-    }
-
-    setLoading(true);
-    try {
-      await axios.delete(`/api/admins/${adminId}`);
-      setSnackbarMessage('Admin removed successfully');
-      setSnackbarSeverity('success');
-    } catch (err) {
-      console.error(err);
-      setSnackbarMessage('Failed to remove admin');
-      setSnackbarSeverity('error');
-    } finally {
-      setLoading(false);
-      setSnackbarOpen(true);
-    }
-  };
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (sidebarRef.current && !sidebarRef.current.contains(event.target as Node)) {
-        setSidebarOpen(false);
-      }
+            setShowActionModal(false);
+            const [employeesData, adminsData, usersData] = await Promise.all([
+                axios.get('/api/employees'),
+                axios.get('/api/admins'),
+                axios.get('/api/register'),
+            ]);
+            setEmployees(employeesData.data);
+            setAdmins(adminsData.data);
+            setUsers(usersData.data);
+        } catch (error) {
+            console.error('Error performing action', error);
+            toast.error('Failed to perform action.');
+        }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+    const handleEditEmployee = (employee: User) => {
+        console.log('Edit employee', employee);
     };
-  }, []);
 
-  return (
-    <div className="flex min-h-screen">
-      <Sidebar
-        onAddAdminClick={handleAddAdminClick}
-        onAddEmployeeClick={handleAddEmployeeClick}
-        onViewAdminsClick={handleViewAdminsClick}
-        isOpen={sidebarOpen}
-        toggleSidebar={toggleSidebar}
-        isAdmin={true}
-      />
+    const handleDeleteEmployee = async (id: string) => {
+        try {
+            await axios.delete(`/api/employees/${id}`);
+            setEmployees(employees.filter(employee => employee.id !== id));
+            toast.success('Employee deleted successfully.');
+        } catch (error) {
+            console.error('Error deleting employee', error);
+            toast.error('Failed to delete employee.');
+        }
+    };
 
-      <div className={`flex-1 p-6 ${sidebarOpen ? 'ml-0' : 'ml-0'} bg-gray-100 relative`}>
-        <button
-          onClick={toggleSidebar}
-          className="sm:hidden fixed top-4 left-4 p-2 bg-slate-200 text-black rounded-full shadow-lg z-50"
-        >
-          <Bars3Icon className="w-6 h-6" />
-        </button>
+    const closeActionModal = () => setShowActionModal(false);
+    const closeAccessDeniedModal = () => {
+        setShowAccessDeniedModal(false);
+        window.history.back();
+    };
 
-        <button
-          onClick={() => router.back()}
-          className="mb-6 text-white hover:bg-blue-600 bg-blue-800 py-2 px-4 rounded-full flex items-center"
-        >
-          <ArrowBack className="mr-2" /> Back
-        </button>
-        <h1 className="text-3xl font-bold text-center mt-4 mb-6">Dashboard Settings</h1>
-        <div className="grid gap-6">
-          <div className="flex items-center justify-center relative">
-            <Image
-              src={profileImage ? URL.createObjectURL(profileImage) : "/images/default.png"}
-              alt="Profile Image"
-              width={100}
-              height={100}
-              className="w-24 h-24 rounded-full border-2 border-blue-500 object-cover"
-            />
-            <label htmlFor="profileImageUpload" className="absolute bottom-0 right-0 p-1 bg-blue-500 rounded-full cursor-pointer">
-              <PencilIcon className="w-6 h-6 text-white" />
-              <input
-                type="file"
-                accept="image/*"
-                id="profileImageUpload"
-                onChange={(e) => setProfileImage(e.target.files?.[0] || null)}
-                className="hidden"
-              />
-            </label>
-          </div>
+    const getCurrentData = () => {
+        if (currentTab === 'employees') return employees;
+        return admins;
+    };
 
-          <div className="flex-col md:flex-row items-center">
-            <h2 className="text-xl font-semibold mb-4">Site Settings</h2>
-            <input
-              type="text"
-              placeholder="Site Name"
-              value={siteName}
-              onChange={(e) => setSiteName(e.target.value)}
-              className="mb-4 p-2 border border-gray-300 rounded w-full"
-            />
-            <input
-              type="text"
-              placeholder="Site URL"
-              value={siteUrl}
-              onChange={(e) => setSiteUrl(e.target.value)}
-              className="mb-4 p-2 border border-gray-300 rounded w-full"
-            />
-            <div className="mb-4">
-              <label htmlFor="logoUpload" className="block mb-2 text-gray-700">Upload a new logo</label>
-              <input
-                type="file"
-                accept="image/*"
-                id="logoUpload"
-                onChange={(e) => setLogo(e.target.files?.[0] || null)}
-                className="block"
-              />
+    const dataToDisplay = getCurrentData().slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-gray-100">
+                <CircularProgress />
             </div>
-            <button
-              onClick={saveChanges}
-              className="bg-indigo-500 hover:bg-indigo-600 text-white py-2 px-4 rounded flex items-center"
-              disabled={loading}
-            >
-              {loading && <CircularProgress size={20} className="mr-2" />}
-              Save Changes
-            </button>
-          </div>
-        </div>
-      </div>
+        );
+    }
 
-      <Modal open={modalOpen === 'addAdmin'} onClose={closeModal} title="Add Admin">
-        <div>
-          <h3 className="text-lg font-semibold mb-4">Select User</h3>
-          <Autocomplete
-            options={users}
-            getOptionLabel={(option) => `${option.name || 'Unknown'} (${option.email || 'No email'})`}
-            value={selectedUser}
-            onChange={(event, value) => setSelectedUser(value)}
-            renderInput={(params) => <TextField {...params} label="Search User" variant="outlined" fullWidth />}
-            renderOption={(props, option) => (
-              <li {...props} style={{ fontWeight: selectedUser?.id === option.id ? 'bold' : 'normal' }}>
-                {option.name || 'Unknown'} ({option.email || 'No email'})
-                {admins.some(admin => admin.id === option.id) && (
-                  <CheckCircleIcon className="w-5 h-5 text-yellow-500 ml-2" />
-                )}
-              </li>
+    if (!session) {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-gray-100">
+                <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-sm text-center">
+                    <h2 className="text-2xl font-bold mb-4">Please Log In</h2>
+                    <p className="mb-6">You need to log in or register to access this page.</p>
+                    <button
+                        onClick={() => signIn()}
+                        className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition duration-300"
+                    >
+                        Go to Login Page
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    if (showAccessDeniedModal) {
+        return (
+            <Dialog open={showAccessDeniedModal} onClose={closeAccessDeniedModal}>
+                <DialogTitle>Access Denied</DialogTitle>
+                <DialogContent>
+                    <p>You must be an admin to view this page.</p>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={closeAccessDeniedModal} color="primary">
+                        Close
+                    </Button>
+                </DialogActions>
+            </Dialog>
+        );
+    }
+
+    return (
+        <div className="mx-auto my-10 max-w-4xl px-4">
+            <h1 className="text-3xl font-bold text-center mb-6 bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 text-transparent bg-clip-text">
+                Employee Management
+            </h1>
+            <p className="text-gray-500 text-center mb-8 bg-gradient-to-r from-green-400 via-blue-500 to-indigo-600 text-transparent bg-clip-text">
+                Manage users and employees here.
+            </p>
+
+            <div className="flex flex-col lg:flex-row lg:space-x-8 mb-6">
+                <div className="lg:w-1/3">
+                    <h2 className="text-2xl font-bold mb-4   bg-gradient-to-r from-purple-400 via-blue-500 to-indigo-600 text-transparent bg-clip-text">Change Status</h2>
+                    <div className="mb-4">
+                        <select
+                            className="bg-gray-50 border border-gray-300 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                            value={actionType}
+                            onChange={(e) => setActionType(e.target.value as 'addAdmin' | 'addEmployee' | 'removeAdmin' | 'removeEmployee')}
+                        >
+                            <option value="addAdmin">Add as Admin</option>
+                            <option value="addEmployee">Add as Employee</option>
+                            <option value="removeAdmin">Remove Admin</option>
+                            <option value="removeEmployee">Remove Employee</option>
+                        </select>
+                    </div>
+                    <div className="mb-4">
+                        <select
+                            className="bg-gray-50 border border-gray-300 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                            onChange={(e) => setSelectedUser(users.find(user => user.id === e.target.value) || null)}
+                        >
+                            <option value="">Select a User</option>
+                            {users.length > 0 ? (
+                                users.map(user => (
+                                    <option key={user.id} value={user.id}>
+                                        {user.name} - {user.email}
+                                    </option>
+                                ))
+                            ) : (
+                                <option value="">No users available</option>
+                            )}
+                        </select>
+                    </div>
+                    <button
+                        onClick={() => setShowActionModal(true)}
+                        className="bg-blue-500 text-white rounded p-2 text-sm flex items-center"
+                    >
+                        <FaUserPlus className="mr-2" /> Perform Action
+                    </button>
+                </div>
+
+                <div className="lg:w-2/3">
+                    <div className="flex justify-between mb-4">
+                        <button
+                            className={`py-2 px-4 mx-2 rounded ${currentTab === 'employees' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                            onClick={() => setCurrentTab('employees')}
+                        >
+                            Employees
+                        </button>
+                        <button
+                            className={`py-2 px-4 mx-2 rounded ${currentTab === 'admins' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                            onClick={() => setCurrentTab('admins')}
+                        >
+                            Admins
+                        </button>
+                    </div>
+
+                    <div className="mb-6">
+                        <h2 className="text-2xl font-bold mb-4 bg-gradient-to-r from-blue-400 via-teal-500 to-green-500 text-transparent bg-clip-text">
+                            {currentTab === 'employees' ? 'Employee List' : 'Admin List'}
+                        </h2>
+                        <table className="min-w-full bg-white border border-gray-300 rounded-lg shadow-lg">
+                            <thead>
+                                <tr>
+                                    <th className="py-2 px-4 border-b">Name</th>
+                                    <th className="py-2 px-4 border-b">Email</th>
+                                    {currentTab === 'employees' && <th className="py-2 px-4 border-b">Actions</th>}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {dataToDisplay.length > 0 ? (
+                                    dataToDisplay.map(user => (
+                                        <tr key={user.id}>
+                                            <td className="py-2 px-4 border-b">{user.name}</td>
+                                            <td className="py-2 px-4 border-b">{user.email}</td>
+                                            {currentTab === 'employees' && (
+                                                <td className="py-2 px-4 border-b">
+                                                    <button
+                                                        onClick={() => handleEditEmployee(user)}
+                                                        className="text-blue-500 hover:text-blue-600"
+                                                    >
+                                                        <FaEdit />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteEmployee(user.id)}
+                                                        className="text-red-500 hover:text-red-600 ml-2"
+                                                    >
+                                                        <FaTrash />
+                                                    </button>
+                                                </td>
+                                            )}
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan={currentTab === 'employees' ? 3 : 2} className="py-2 px-4 text-center">No data available</td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                            className="bg-gray-300 text-gray-700 rounded px-4 py-2"
+                            disabled={currentPage === 1}
+                        >
+                            Previous
+                        </button>
+                        <span>Page {currentPage}</span>
+                        <button
+                            onClick={() => setCurrentPage(prev => prev + 1)}
+                            className="bg-gray-300 text-gray-700 rounded px-4 py-2"
+                            disabled={(currentPage * itemsPerPage) >= getCurrentData().length}
+                        >
+                            Next
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {showActionModal && (
+                <Dialog open={showActionModal} onClose={closeActionModal}>
+                    <DialogTitle>Confirm Action</DialogTitle>
+                    <DialogContent>
+                        <p>Are you sure you want to {actionType.replace(/([A-Z])/g, ' $1').toLowerCase()} {selectedUser?.name}?</p>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={handleAction} color="primary">
+                            Confirm
+                        </Button>
+                        <Button onClick={closeActionModal} color="secondary">
+                            Cancel
+                        </Button>
+                    </DialogActions>
+                </Dialog>
             )}
-          />
-          {selectedUser && (
-            <div className="mt-4">
-              <p>Selected User: {selectedUser.name || 'Unknown'}</p>
-              {!admins.some(admin => admin.id === selectedUser.id) ? (
-                <button
-                  onClick={handleAddAdmin}
-                  className="mt-4 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded flex items-center"
-                  disabled={loading}
-                >
-                  {loading && <CircularProgress size={20} className="mr-2" />}
-                  Add Admin
-                </button>
-              ) : (
-                <button
-                  onClick={() => handleRemoveAdmin(selectedUser.id)}
-                  className="mt-4 bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded flex items-center"
-                  disabled={loading}
-                >
-                  {loading && <CircularProgress size={20} className="mr-2" />}
-                  Remove Admin
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-      </Modal>
 
-      <Modal open={modalOpen === 'addEmployee'} onClose={closeModal} title="Add Employee">
-        <div>
-          <h3 className="text-lg font-semibold mb-4">Select User</h3>
-          <Autocomplete
-            options={users}
-            getOptionLabel={(option) => `${option.name || 'Unknown'} (${option.email || 'No email'})`}
-            value={selectedUser}
-            onChange={(event, value) => setSelectedUser(value)}
-            renderInput={(params) => <TextField {...params} label="Search User" variant="outlined" fullWidth />}
-            renderOption={(props, option) => (
-              <li {...props} style={{ fontWeight: selectedUser?.id === option.id ? 'bold' : 'normal' }}>
-                {option.name || 'Unknown'} ({option.email || 'No email'})
-                {employees.some(emp => emp.id === option.id) && (
-                  <CheckCircleIcon className="w-5 h-5 text-green-500 ml-2" />
-                )}
-              </li>
-            )}
-          />
-          {selectedUser && (
-            <div className="mt-4">
-              <p>Selected User: {selectedUser.name || 'Unknown'} ({selectedUser.email || 'No email'})</p>
-              {employees.some(emp => emp.id === selectedUser.id) ? (
-                <button
-                  onClick={() => handleRemoveEmployee(selectedUser.id)}
-                  className="mt-4 bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded flex items-center"
-                  disabled={loading}
-                >
-                  {loading && <CircularProgress size={20} className="mr-2 text-white" />}
-                  Remove Employee
-                </button>
-              ) : (
-                <button
-                  onClick={handleAddEmployee}
-                  className="mt-4 bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded flex items-center"
-                  disabled={loading}
-                >
-                  {loading && <CircularProgress size={20} className="mr-2 text-white" />}
-                  Add Employee
-                </button>
-              )}
-            </div>
-          )}
+            <ToastContainer />
         </div>
-      </Modal>
-
-      <Modal open={modalOpen === 'viewAdmins'} onClose={closeModal} title="View Admins">
-        <div>
-          <h3 className="text-lg font-semibold mb-4 text-center text-purple-600">Admin List</h3>
-          {admins.length === 0 ? (
-            <p className='text-slate-600 text-center'>No admins available.</p>
-          ) : (
-            <ul>
-              {admins.map(admin => (
-                <li key={admin.id} className="flex justify-between text-slate-600 font-bold items-center mb-2">
-                  <span>{admin.name || 'Unknown'} ({admin.email || 'No email'})</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </Modal>
-
-      <Modal open={showAccessDenied} onClose={() => setShowAccessDenied(false)} title="Access Denied">
-        <div className="p-4">
-          <h2 className="text-xl font-semibold mb-4 text-red-600">Access Denied</h2>
-          <p className="mb-4">You are not permitted to perform this operation.</p>
-          <Button
-            onClick={() => setShowAccessDenied(false)}
-            className="bg-blue-500 text-white px-4 py-2 rounded-md"
-          >
-            OK
-          </Button>
-        </div>
-      </Modal>
-
-      <Snackbar
-        open={snackbarOpen}
-        autoHideDuration={6000}
-        onClose={() => setSnackbarOpen(false)}
-      >
-        <Alert onClose={() => setSnackbarOpen(false)} severity={snackbarSeverity}>
-          {snackbarMessage}
-        </Alert>
-      </Snackbar>
-    </div>
-  );
+    );
 };
 
-export default Settings;
+export default UserManagement;
