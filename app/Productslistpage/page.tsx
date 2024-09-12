@@ -1,4 +1,4 @@
-"use client";
+"use client"; // Ensure this is a Client Component
 
 import React, { useState, useEffect } from 'react';
 import { FaBars, FaTimes, FaSearch } from 'react-icons/fa';
@@ -9,12 +9,12 @@ import Sidebar from '@/components/Psidebar/page'; // Adjust the path as necessar
 import Card from '@/components/card/page'; // Adjust the path to Card component
 
 interface Product {
-  id: number;
+  id: string; // Use string for id to match Card component
   title: string;
   description: string;
   price: number;
   oldPrice?: number;
-  imageUrl?: string;
+  image?: string; // Ensure consistency with Card component
   rating?: number;
   category: string;
 }
@@ -54,7 +54,7 @@ const HomePage: React.FC = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await fetch('/mockdata.json'); // Path from public folder
+        const response = await fetch('/actions/products'); // Path from public folder
         if (!response.ok) {
           throw new Error('Network response was not ok');
         }
@@ -253,12 +253,12 @@ const HomePage: React.FC = () => {
                 <Card
                   key={product.id}
                   id={product.id}
-                  title={product.title}
+                  name={product.title} // Match Card props
                   price={product.price}
                   oldPrice={product.oldPrice}
-                  imageUrl={product.imageUrl}
+                  imageUrl={product.image}
                   description={product.description}
-                  rating={product.rating}
+                  ratings={product.rating} // Match Card props
                 />
               ))
             ) : (

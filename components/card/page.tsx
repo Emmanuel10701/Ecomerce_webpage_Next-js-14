@@ -1,4 +1,4 @@
-'use client'; // Add this line to make sure this is a Client Component
+'use client'; // Ensure this is a Client Component
 
 import React from 'react';
 import { FaCartPlus, FaCartArrowDown } from 'react-icons/fa';
@@ -8,23 +8,23 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation'; // Updated import
 
 interface CardProps {
-  id: number; // Changed from string to number
-  title: string;
+  id: string; // ID as a string
+  name: string;
   price: number;
   oldPrice?: number;
-  imageUrl?: string;
+  imageUrl?: string; // Changed from image to imageUrl
   description?: string;
-  rating?: number;
+  ratings?: number; // Changed from rating to ratings
 }
 
 const Card: React.FC<CardProps> = ({
   id,
-  title,
+  name,
   price,
   oldPrice,
   imageUrl = 'https://via.placeholder.com/150', // Default image
   description = 'No description available.',
-  rating = 0,
+  ratings = 0,
 }) => {
   const { state, dispatch } = useCart();
   const [isInCart, setIsInCart] = React.useState<boolean>(false);
@@ -44,9 +44,9 @@ const Card: React.FC<CardProps> = ({
         type: 'ADD_TO_CART',
         payload: {
           id,
-          name: title,
+          name,
           price,
-          quantity: 1,
+          quantity: 1, // Assuming quantity is 1 for cart items
           imageUrl,
         },
       });
@@ -62,6 +62,9 @@ const Card: React.FC<CardProps> = ({
     router.push(`/Productslistpage/${id}`);
   };
 
+  // Truncate description to the first 10 words
+  const truncatedDescription = description.split(' ').slice(0, 10).join(' ') + (description.split(' ').length > 10 ? '...' : '');
+
   return (
     <div 
       className="relative border p-2 rounded-lg overflow-hidden shadow-md w-[100%] bg-white hover:shadow-lg transition-shadow duration-300 ease-in-out cursor-pointer"
@@ -69,12 +72,12 @@ const Card: React.FC<CardProps> = ({
       <div>
         <Image 
           src={imageUrl} 
-          onClick={handleCardClick}
-          alt={title} 
+          alt={name} 
           width={150} 
           height={150} 
           className="w-full h-32 object-cover" 
           onError={(e) => (e.currentTarget.src = 'https://via.placeholder.com/150')} 
+          onClick={handleCardClick} // Navigate on image click
         />
         {oldPrice && (
           <div className="absolute top-2 right-2 bg-purple-600 text-white text-xs px-2 py-1 rounded-xl">
@@ -83,17 +86,17 @@ const Card: React.FC<CardProps> = ({
         )}
       </div>
       <div className="p-1">
-        <h3 className="text-sm font-bold text-green-700 mb-2">{title}</h3>
-        <p className="text-xs text-gray-500 mb-2">{description}</p>
+        <h3 className="text-sm font-bold text-green-700 mb-2">{name}</h3>
+        <p className="text-xs text-gray-500 mb-2">{truncatedDescription}</p>
         <div className="flex items-center justify-between mb-2">
           <div className="text-sm mr-2 font-semibold text-blue-600">{`ksh${price.toFixed(2)}`}</div>
           {oldPrice && (
             <div className="text-sm font-medium text-gray-500 line-through ml-2">{`ksh${oldPrice.toFixed(2)}`}</div>
           )}
         </div>
-        {rating !== undefined && (
+        {ratings !== undefined && (
           <div className="mt-2">
-            <StarRating rating={rating} />
+            <StarRating rating={ratings} />
           </div>
         )}
         <button

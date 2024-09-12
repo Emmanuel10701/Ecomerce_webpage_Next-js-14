@@ -25,8 +25,6 @@ interface Product {
   category: string;
 }
 
-
-
 interface DeleteProductModalProps {
   isOpen: boolean;
   onRequestClose: () => void;
@@ -109,7 +107,6 @@ const ListProducts: React.FC = () => {
   const pageSize = 10;
   const DEFAULT_IMAGE = '/path/to/default-image.jpg'; // Replace with the path to your default image
 
-
   const fetchProducts = async () => {
     try {
       const response = await axios.get('/actions/products');
@@ -167,12 +164,10 @@ const ListProducts: React.FC = () => {
     }
   };
 
-
   const handleRefresh = () => {
     setIsRefreshing(true);
     fetchProducts().finally(() => setIsRefreshing(false));
   };
-
 
   const handleCloseModals = () => {
     setIsDeleteModalOpen(false);
@@ -217,24 +212,26 @@ const ListProducts: React.FC = () => {
               placeholder="Search products..."
               className="border p-2 rounded-md w-full max-w-xs mb-2"
             />
-
-                 <button
-                  onClick={handleRefresh}
-                  className="bg-blue-500 text-white py-1.5 px-3 rounded-full hover:bg-blue-600 transition duration-300 flex items-center"
-                >
-                  <FaSync className="mr-2" />
-                  Refresh
-                </button> 
+            <button
+              onClick={handleRefresh}
+              className="bg-blue-500 text-white py-1.5 px-3 rounded-full hover:bg-blue-600 transition duration-300 flex items-center"
+            >
+              <FaSync className="mr-2" />
+              Refresh
+            </button>
             <select
               value={selectedCategory}
               onChange={e => setSelectedCategory(e.target.value)}
               className="border p-2 rounded-md w-full max-w-xs"
             >
               <option value="All">All Categories</option>
-              <option value="Electronics">Electronics</option>
-              <option value="Furniture">Furniture</option>
-              <option value="Clothing">Clothing</option>
+              <option value="Accessories">Accessories</option>
+              <option value="Groceries">Groceries</option>
+              <option value="Fashions">Fashions</option>
+              <option value="Home Appliances">Home Appliances</option>
+              <option value="Kids">Kids</option>
             </select>
+
           </div>
           {loading ? (
             <div className="flex justify-center items-center h-96">
@@ -261,14 +258,14 @@ const ListProducts: React.FC = () => {
                   filteredProducts.slice((currentPage - 1) * pageSize, currentPage * pageSize).map(product => (
                     <tr key={product.id}>
                       <td className="border border-gray-300 p-2">
-                        <img src={product.image} alt={product.name} className="w-14 h-14 object-cover rounded-lg" />
+                        <img src={product.image || DEFAULT_IMAGE} alt={product.name} className="w-14 h-14 object-cover rounded-lg" />
                       </td>
                       <td className="border border-gray-300 p-2">{product.name}</td>
-                      <td className="border border-gray-300 p-2">$ {product.starRating !== undefined && (
-                    <div className="mt-2">
-                      <StarRating rating={product.starRating} />
-                    </div>
-                  )}</td>
+                      <td className="border border-gray-300 p-2">${product.price.toFixed(2)}</td>
+                      <td className="border border-gray-300 p-2">{product.quantity}</td>
+                      <td className="border border-gray-300 p-2">
+                        <StarRating rating={product.starRating} />
+                      </td>
                       <td className="border border-gray-300 p-2">
                         <button
                           onClick={() => handleOpenModal('view', product.id)}
@@ -314,7 +311,7 @@ const ListProducts: React.FC = () => {
           description: '',
           price: 0,
           quantity: 0,
-          image: '',
+          image: DEFAULT_IMAGE,
           starRating: 0,
           category: ''
         }}
@@ -328,7 +325,7 @@ const ListProducts: React.FC = () => {
           description: '',
           price: 0,
           quantity: 0,
-          image: '',
+          image: DEFAULT_IMAGE,
           starRating: 0,
           category: ''
         }}

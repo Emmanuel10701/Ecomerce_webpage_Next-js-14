@@ -47,7 +47,7 @@ export async function POST(request: Request) {
           oldPrice: oldPrice ? parseFloat(oldPrice) : null,
           quantity: quantity ? parseInt(quantity) : null,
           ratings: parseFloat(ratings),
-          category:category,// Ensure this matches your Prisma schema
+          category, // Ensure this matches your Prisma schema
           image: imageUrl,
         },
       });
@@ -63,10 +63,15 @@ export async function POST(request: Request) {
   }
 }
 
-// GET request handler to fetch all products
+// GET request handler to fetch all products, ordered by createdAt in descending order
 export async function GET() {
   try {
-    const products = await prisma.product.findMany();
+    const products = await prisma.product.findMany({
+      orderBy: {
+        createdAt: 'desc', // Order products by `createdAt` field in descending order
+      },
+    });
+
     return NextResponse.json(products);
   } catch (dbError: any) {
     console.error('Database operation error:', dbError.message);

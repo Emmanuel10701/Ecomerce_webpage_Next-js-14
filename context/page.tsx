@@ -1,14 +1,14 @@
 "use client"; // Ensure this file is treated as client-side
 
-import React, { createContext, useContext, useReducer, ReactNode, useEffect, useState } from 'react';
+import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
 
 // Define types
 interface CartItem {
-  id: number; // Use number here
+  id: string; // Ensure id is a string
   name: string;
   price: number;
   quantity: number;
-  imageUrl: string;
+  imageUrl: string; // Use imageUrl, not image
 }
 
 interface CartState {
@@ -22,12 +22,12 @@ interface AddToCartAction {
 
 interface RemoveFromCartAction {
   type: 'REMOVE_FROM_CART';
-  payload: { id: number }; // Use number here
+  payload: { id: string }; // Ensure id is a string
 }
 
 interface UpdateQuantityAction {
   type: 'UPDATE_QUANTITY';
-  payload: { id: number; quantity: number }; // Use number here
+  payload: { id: string; quantity: number }; // Ensure id is a string
 }
 
 type CartAction = AddToCartAction | RemoveFromCartAction | UpdateQuantityAction;
@@ -64,8 +64,6 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
 };
 
 const loadCartFromLocalStorage = (): CartState => {
-  if (typeof window === 'undefined') return { items: [] }; // Ensure it's not called on the server-side
-
   const savedCart = localStorage.getItem('cart');
   if (savedCart) {
     try {
@@ -81,18 +79,10 @@ const loadCartFromLocalStorage = (): CartState => {
 };
 
 export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [initialState, setInitialState] = useState<CartState>({ items: [] });
+  const [state, dispatch] = useReducer(cartReducer, loadCartFromLocalStorage());
 
   useEffect(() => {
-    setInitialState(loadCartFromLocalStorage());
-  }, []);
-
-  const [state, dispatch] = useReducer(cartReducer, initialState);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('cart', JSON.stringify(state.items));
-    }
+    localStorage.setItem('cart', JSON.stringify(state.items));
   }, [state.items]);
 
   return (

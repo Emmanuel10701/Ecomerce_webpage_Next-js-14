@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React, { useState } from 'react';
 import { useStripe, useElements, CardNumberElement, CardExpiryElement, CardCvcElement, Elements } from '@stripe/react-stripe-js';
@@ -12,12 +12,15 @@ const CheckoutCard: React.FC = () => {
   const elements = useElements();
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'mpesa'>('card');
   const [error, setError] = useState<string | null>(null);
+  const [mpesaNumber, setMpesaNumber] = useState<string>('');
 
   const handleCheckout = async (event: React.FormEvent) => {
     event.preventDefault();
+    setError(null); // Reset error state
 
     if (paymentMethod === 'card') {
       if (!stripe || !elements) {
+        setError('Stripe has not loaded correctly.');
         return;
       }
 
@@ -26,7 +29,7 @@ const CheckoutCard: React.FC = () => {
       const cardCvcElement = elements.getElement(CardCvcElement);
 
       if (!cardNumberElement || !cardExpiryElement || !cardCvcElement) {
-        alert('Card elements not found.');
+        setError('Card elements not found.');
         return;
       }
 
@@ -36,12 +39,21 @@ const CheckoutCard: React.FC = () => {
       });
 
       if (error) {
-        console.error('Stripe payment method creation error:', error);
+        setError(`Stripe payment method creation error: ${error.message}`);
       } else {
         console.log('Received Stripe payment method:', paymentMethodResponse);
         alert('Checkout functionality is not implemented yet.');
         // Here you would typically send the paymentMethod.id to your server
       }
+    } else if (paymentMethod === 'mpesa') {
+      if (!mpesaNumber.trim()) {
+        setError('M-Pesa number is required.');
+        return;
+      }
+
+      console.log('Received M-Pesa number:', mpesaNumber);
+      alert('Checkout functionality is not implemented yet.');
+      // Here you would typically send the M-Pesa number to your server
     }
   };
 
@@ -130,6 +142,19 @@ const CheckoutCard: React.FC = () => {
               </div>
             </div>
           </>
+        )}
+
+        {paymentMethod === 'mpesa' && (
+          <div className="mb-4">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">M-Pesa Number:</label>
+            <input
+              type="text"
+              value={mpesaNumber}
+              onChange={(e) => setMpesaNumber(e.target.value)}
+              className="border border-gray-300 p-2 rounded-lg bg-gray-50 w-full"
+              placeholder="Enter M-Pesa number"
+            />
+          </div>
         )}
 
         {error && <p className="text-red-600 mb-4">{error}</p>}

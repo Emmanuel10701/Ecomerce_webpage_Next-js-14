@@ -1,10 +1,9 @@
-// pages/cart.tsx
-
 "use client";
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { useCart } from '../../context/page'; // Adjust this path to your actual context path
+import Image from 'next/image';
 
 // Helper function to format prices
 const formatPrice = (price: number): string => {
@@ -35,7 +34,15 @@ const CartPage: React.FC = () => {
     <div className="cart p-4 max-w-screen-lg mx-auto">
       <h1 className="text-3xl font-bold mb-4 text-gray-500 text-center">Shopping Cart</h1>
       {state.items.length === 0 ? (
-        <p className='text-center text-slate-500 text-md'>Your cart is empty</p>
+        <div className="flex flex-col items-center justify-center border-none p-4 my-[10%]">
+          <p className="text-center text-slate-500 text-md mb-4">Your cart is empty</p>
+          <button
+            className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
+            onClick={() => router.push('/Productslistpage')} // Navigate to products page
+          >
+            Go to Products
+          </button>
+        </div>
       ) : (
         <div className="overflow-x-auto">
           <div className="w-full max-w-4xl mx-auto">
@@ -53,7 +60,14 @@ const CartPage: React.FC = () => {
                 {state.items.map(item => (
                   <tr key={item.id}>
                     <td className="px-2 py-2 text-center">
-                      <img src={item.imageUrl} alt={item.name} className="w-16 h-16 object-cover rounded-lg mx-auto" />
+                      <Image
+                        src={item.imageUrl || '/images/placeholder.jpg'} // Default image if no imageUrl
+                        alt={item.name}
+                        width={64}
+                        height={64}
+                        className="w-16 h-16 object-cover rounded-lg mx-auto"
+                        onError={(e) => (e.currentTarget.src = '/images/placeholder.jpg')} // Handle image errors
+                      />
                     </td>
                     <td className="px-2 py-2 text-sm">
                       <input

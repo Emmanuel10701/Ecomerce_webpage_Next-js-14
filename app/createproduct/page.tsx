@@ -14,7 +14,7 @@ interface FormData {
   oldPrice?: number;
   ratings?: number;
   image: File | null;
-  quantity: number;
+  quantity?: number; // Made optional
   category: string;
 }
 
@@ -26,7 +26,7 @@ const CreateProduct = () => {
     oldPrice: undefined,
     ratings: undefined,
     image: null,
-    quantity: 0,
+    quantity: undefined, // Set to undefined initially
     category: "",
   });
   const [loading, setLoading] = useState(false);
@@ -50,14 +50,11 @@ const CreateProduct = () => {
         setImagePreviewUrl(null);
       }
     } else if (type === 'select-one') {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value,
-      }));
+      setFormData(prev => ({ ...prev, [name]: value }));
     } else {
       setFormData(prev => ({
         ...prev,
-        [name]: type === 'number' ? (value ? parseFloat(value) : '') : value,
+        [name]: type === 'number' ? (value ? parseFloat(value) : undefined) : value,
       }));
     }
   };
@@ -66,7 +63,7 @@ const CreateProduct = () => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-  
+
     if (status === 'unauthenticated') {
       setShowLoginPrompt(true);
       setLoading(false);
@@ -88,6 +85,7 @@ const CreateProduct = () => {
       if (formData.ratings !== undefined) form.append('ratings', formData.ratings.toString());
       if (formData.image) form.append('image', formData.image);
       form.append('category', formData.category);
+      if (formData.quantity !== undefined) form.append('quantity', formData.quantity.toString());
   
       const response = await axios.post('/actions/products', form, {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -102,7 +100,7 @@ const CreateProduct = () => {
           oldPrice: undefined,
           ratings: undefined,
           image: null,
-          quantity: 0,
+          quantity: undefined,
           category: "",
         });
         setImagePreviewUrl(null);
@@ -214,7 +212,7 @@ const CreateProduct = () => {
               className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
             >
               <option value="">Select category</option>
-              {["Accessories", "Groceries", "Fashions", "Home Appliants", "Kids"].map(category => (
+              {["Accessories", "Groceries", "Fashions", "Home Appliances", "Kids"].map(category => (
                 <option key={category} value={category}>{category}</option>
               ))}
             </select>
@@ -239,7 +237,7 @@ const CreateProduct = () => {
             <input
               type="number"
               name="quantity"
-              value={formData.quantity}
+              value={formData.quantity !== undefined ? formData.quantity : ''}
               onChange={handleChange}
               step="1"
               className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"

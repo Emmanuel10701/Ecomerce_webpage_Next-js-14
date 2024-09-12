@@ -9,9 +9,9 @@ import interactionPlugin from '@fullcalendar/interaction';
 import { Dialog, Button, IconButton, CircularProgress, Drawer, Badge } from '@mui/material';
 import { AiOutlineClose, AiOutlineBell } from 'react-icons/ai';
 import Sidebar from '@/components/sidebar/page';
-import LoadingSpinner from '@/components/spinner/page';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+
 
 type Event = {
   title: string;
@@ -193,12 +193,10 @@ const CalendarPage: React.FC = () => {
 
   if (status === 'loading') {
     return (
-      <div className="flex h-screen overflow-hidden">
-        <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
-        <main className="flex-1 p-4 bg-blue-400 flex items-center justify-center">
-          <LoadingSpinner />
-        </main>
-      </div>
+
+      <div className="flex justify-center items-center h-96">
+              <CircularProgress />
+            </div>
     );
   }
 
@@ -237,7 +235,7 @@ const CalendarPage: React.FC = () => {
             onClick={handleNotificationClick}
           >
             <Badge badgeContent={notificationCount} color="error">
-              <AiOutlineBell size={32} className="text-slate-100" />
+              <AiOutlineBell size={32} className="text-white bg-indigo-600 p-2 rounded-full" />
             </Badge>
           </IconButton>
         </div>

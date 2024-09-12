@@ -6,6 +6,8 @@ const nextConfig = {
       'cdn.example.com',
       'images.example.com',
       "images.pexels.com", 
+      'cdn.jsdelivr.net',
+      'via.placeholder.com',
     ],
   },
   // You can add other Next.js configuration options here
