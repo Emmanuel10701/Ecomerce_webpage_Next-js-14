@@ -18,14 +18,14 @@ interface Product {
   rating?: number;
   category: string;
 }
-
 const categories = [
-  'Electronics',
+  'Accessories',
+  'Groceries',
+  'Fashions',
   'Home Appliances',
-  'Fashion',
-  'Books & Media',
   'Kids'
 ];
+
 
 const HomePage: React.FC = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
