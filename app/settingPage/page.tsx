@@ -1,8 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import axios from "axios";
 import { useSession } from 'next-auth/react';
-import { FaEdit, FaTrash, FaUserPlus, FaCheckCircle } from "react-icons/fa";
+import { FaCheckCircle } from "react-icons/fa";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -12,6 +11,13 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import Button from '@mui/material/Button';
 import { useRouter } from 'next/navigation';
+import {
+    fetchUsers,
+    addAdmin,
+    addEmployee,
+    removeEmployee,
+    removeAdmin
+} from '@/libs/api'; // Ensure the path is correct
 
 interface User {
     id: string;
@@ -40,7 +46,7 @@ const UserManagement: React.FC = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const { data: usersData } = await axios.get('/api/register');
+                const usersData = await fetchUsers();
                 setUsers(Array.isArray(usersData.data) ? usersData.data : []);
 
                 const adminsData = usersData.data.filter((user: User) => user.role === 'ADMIN');
@@ -92,22 +98,22 @@ const UserManagement: React.FC = () => {
             }
 
             if (actionType === 'addAdmin') {
-                await axios.post(`/api/admins`, { userId: selectedUser.id });
+                await addAdmin(selectedUser.id);
                 toast.success('User added as admin successfully.');
             } else if (actionType === 'addEmployee') {
-                await axios.post(`/api/employees`, { userId: selectedUser.id });
+                await addEmployee(selectedUser.id);
                 toast.success('User added as employee successfully.');
             } else if (actionType === 'removeEmployee') {
-                await axios.delete(`/api/employees/${selectedUser.id}`);
+                await removeEmployee(selectedUser.id);
                 toast.success('Employee removed successfully.');
             } else if (actionType === 'removeAdmin') {
-                await axios.delete(`/api/admins/${selectedUser.id}`);
+                await removeAdmin(selectedUser.id);
                 toast.success('Admin removed successfully.');
             }
 
             setShowActionModal(false);
             // Fetch updated user list
-            const { data: usersData } = await axios.get('/api/register');
+            const usersData = await fetchUsers();
             const adminsData = usersData.data.filter((user: User) => user.role === 'ADMIN');
             const employeesData = usersData.data.filter((user: User) => user.role === 'STAFF');
 
@@ -125,7 +131,7 @@ const UserManagement: React.FC = () => {
 
     const handleDeleteEmployee = async (id: string) => {
         try {
-            await axios.delete(`/api/employees/${id}`);
+            await removeEmployee(id);
             setEmployees(employees.filter(employee => employee.id !== id));
             toast.success('Employee deleted successfully.');
         } catch (error) {
@@ -305,7 +311,6 @@ const UserManagement: React.FC = () => {
                                             <td className="py-2 px-4 border-b">{user.name}</td>
                                             <td className="py-2 px-4 border-b">{user.email}</td>
                                             <td className="py-2 px-4 border-b">{user.role}</td>
-                                         
                                         </tr>
                                     ))}
                                 </tbody>
