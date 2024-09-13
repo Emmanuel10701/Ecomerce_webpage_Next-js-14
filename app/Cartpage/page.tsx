@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCart } from '../../context/page'; // Adjust this path to your actual context path
 import Image from 'next/image';
@@ -19,6 +19,7 @@ const formatPrice = (price: number): string => {
 const CartPage: React.FC = () => {
   const router = useRouter();
   const { state, dispatch } = useCart();
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const handleRemoveItem = (id: string) => {
     dispatch({ type: 'REMOVE_FROM_CART', payload: { id } });
@@ -29,6 +30,14 @@ const CartPage: React.FC = () => {
   };
 
   const total = state.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+  const handleProceedToCheckout = () => {
+    setIsLoading(true);
+    // Simulate a delay to show loading indicator
+    setTimeout(() => {
+      router.push('/checkout'); // Navigate to checkout page
+    }, 1000); // Adjust delay as needed
+  };
 
   return (
     <div className="cart p-4 max-w-screen-lg mx-auto">
@@ -98,10 +107,20 @@ const CartPage: React.FC = () => {
       {state.items.length > 0 && (
         <div className="mt-6 flex flex-col sm:flex-row justify-between items-center">
           <button
-            className="mt-4 sm:mt-0 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
-            onClick={() => router.push('/checkout')} // Navigate to checkout page
+            className="mt-4 sm:mt-0 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center"
+            onClick={handleProceedToCheckout}
+            disabled={isLoading}
           >
-            Proceed to Checkout
+            {isLoading ? (
+              <div className="flex space-x-2">
+                <div className="w-2.5 h-2.5 bg-white rounded-full animate-dotFlashing"></div>
+                <div className="w-2.5 h-2.5 bg-white rounded-full animate-dotFlashing delay-200"></div>
+                <div className="w-2.5 h-2.5 bg-white rounded-full animate-dotFlashing delay-400"></div>
+              </div>
+            ) : (
+              'Proceed to Checkout'
+            )}
+            {isLoading && ' Proceeding...'}
           </button>
           <h2 className="text-lg sm:text-xl text-slate-500 font-extrabold mt-4 sm:mt-0">Total: ${formatPrice(total)}</h2>
         </div>

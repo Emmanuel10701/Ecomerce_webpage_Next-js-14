@@ -1,103 +1,73 @@
-'use client'; // Ensure this is a Client Component
-
+"use client";
 import React, { useState, useEffect } from 'react';
 import { FaCartPlus, FaCartArrowDown, FaArrowLeft, FaFacebook, FaTwitter, FaInstagram, FaLinkedin } from 'react-icons/fa';
-import { useCart } from '../../../context/page'; // Adjust the path if needed
-import StarRating from '../../../components/star/page'; // Import the StarRating component
+import StarRating from '../../../components/star/page';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation'; // Updated import
-import CircularProgress from '@mui/material/CircularProgress'; // Import CircularProgress
+import { useRouter } from 'next/navigation';
+import { useCart } from '../../../context/page'; // Adjust the path if needed
 
 interface Product {
-  id: string; // ID as a string
-  title: string;
+  id: string;
+  name: string;
   price: number;
   oldPrice?: number;
-  imageUrl?: string;
+  image: string;
   description?: string;
-  rating?: number;
+  ratings?: number;
   category?: string;
 }
 
-interface CartAction {
-  type: 'ADD_TO_CART' | 'REMOVE_FROM_CART';
-  payload: {
-    id: string;
-    name: string;
-    price: number;
-    quantity: number;
-    imageUrl: string;
-  };
-}
-
 const ProductPage: React.FC<{ params: { id: string } }> = ({ params }) => {
-  const productId = params.id; // Use string directly
+  const id = params.id;
   const [product, setProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [isInCart, setIsInCart] = useState<boolean>(false);
   const [isReadMore, setIsReadMore] = useState<boolean>(false);
   const { state, dispatch } = useCart();
   const router = useRouter();
+  const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
+  const shareUrl = encodeURIComponent(currentUrl);
 
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const response = await fetch(`/actions/products/${productId}`);
-        if (!response.ok) {
-          throw new Error('Product not found');
-        }
+        const response = await fetch(`/actions/products/${id}`);
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
         const data: Product = await response.json();
         setProduct(data);
-      } catch (error) {
-        console.error('Error fetching product:', error);
-        setError('Failed to load product.');
+      } catch (error: any) {
+        setError(`Failed to load product: ${error.message}`);
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchProduct();
-  }, [productId]);
+  }, [id]);
 
-  useEffect(() => {
-    const itemInCart = state.items.some(item => item.id === productId);
-    setIsInCart(itemInCart);
-  }, [state.items, productId]);
+  const isInCart = state.items.some(item => item.id === id);
 
   const handleAddToCart = () => {
-    if (isInCart) {
-      dispatch({ type: 'REMOVE_FROM_CART', payload: { id: productId } });
-      setIsInCart(false);
-    } else {
-      if (product) {
-        dispatch({
-          type: 'ADD_TO_CART',
-          payload: {
-            id: productId,
-            name: product.title,
+    if (product) {
+      const actionType = isInCart ? 'REMOVE_FROM_CART' : 'ADD_TO_CART';
+      const payload = isInCart
+        ? { id: product.id }
+        : {
+            id: product.id,
+            name: product.name,
             price: product.price,
             quantity: 1,
-            imageUrl: product.imageUrl || '/default-image.jpg', // Provide a fallback
-          } as CartAction['payload'], // Explicitly cast to CartAction['payload']
-        });
-        setIsInCart(true);
-      }
+            imageUrl: product.image || '/default-image.jpg',
+          };
+
+      dispatch({ type: actionType, payload });
     }
-  };
-
-  const handleCardClick = () => {
-    router.push(`/Productslistpage/${productId}`);
-  };
-
-  const handleSocialLink = (url: string) => {
-    router.push(url);
   };
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <CircularProgress size={60} color="primary" />
+        <div className="w-8 h-8 border-4 border-t-blue-600 border-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -110,16 +80,18 @@ const ProductPage: React.FC<{ params: { id: string } }> = ({ params }) => {
     );
   }
 
-  if (!product) {
-    return null; // Fallback in case product is still null
-  }
+  if (!product) return null;
 
-  const discountPercentage = product.oldPrice ? ((product.oldPrice - product.price) / product.oldPrice * 100).toFixed(0) : '';
-  const descriptionSnippet = product.description?.split(' ').slice(0, 10).join(' ') + '...';
+  const discountPercentage = product.oldPrice
+    ? ((product.oldPrice - product.price) / product.oldPrice * 100).toFixed(0)
+    : '';
+  const descriptionSnippet = product.description
+    ? product.description.split(' ').slice(0, 10).join(' ') + '...'
+    : '';
   const fullDescription = product.description || '';
 
   return (
-    <div className="container mx-auto p-4 mt-14 mx-4">
+    <div className="container mx-auto p-4 mt-14 relative">
       {/* Back Button */}
       <div className="absolute top-4 left-4">
         <button
@@ -134,39 +106,36 @@ const ProductPage: React.FC<{ params: { id: string } }> = ({ params }) => {
       {/* Product Details */}
       <div className="flex flex-col md:flex-row">
         {/* Product Image */}
-        <div className="w-full md:w-2/4 flex flex-col items-start">
-          <div className="relative w-full flex flex-col justify-center mb-4">
+        <div className="w-full md:w-2/4 flex flex-col items-center">
+          <div className="relative w-full flex justify-center mb-4">
             <Image
-              src={product.imageUrl || '/placeholder.jpg'}
-              alt={product.title}
+              src={product.image || '/placeholder.jpg'}
+              alt={`Image of ${product.name}`}
               width={600}
               height={600}
               layout="responsive"
-              className="w-full h-auto rounded-xl"
+              className="rounded-xl"
             />
-            {product.rating && (
+            {product.oldPrice && (
               <div className="absolute top-2 right-2 bg-purple-600 text-white text-xs px-2 py-1 rounded-xl">
                 -{discountPercentage}%
               </div>
             )}
           </div>
-
-          {/* Related Products */}
-          {/* Fetch related products or display static related products if needed */}
         </div>
 
         {/* Product Information */}
         <div className="w-full md:w-2/4 flex flex-col p-4">
-          <h1 className="text-2xl font-bold mb-2">{product.title}</h1>
+          <h1 className="text-2xl font-bold mb-2">{product.name}</h1>
           <div className="flex items-center mb-4">
             <span className="text-xl font-semibold mr-2">${product.price.toFixed(2)}</span>
             {product.oldPrice && (
               <span className="text-sm text-gray-500 line-through">${product.oldPrice.toFixed(2)}</span>
             )}
           </div>
-          {product.rating && (
+          {product.ratings && (
             <div className="mb-4">
-              <StarRating rating={product.rating} />
+              <StarRating rating={product.ratings} />
             </div>
           )}
           <p className="mb-4">
@@ -203,16 +172,16 @@ const ProductPage: React.FC<{ params: { id: string } }> = ({ params }) => {
 
       {/* Social Media Links */}
       <div className="flex space-x-4 mt-8">
-        <a href={`https://facebook.com/sharer/sharer.php?u=${window.location.href}`} target="_blank" rel="noopener noreferrer" className="text-blue-600">
+        <a href={`https://facebook.com/sharer/sharer.php?u=${shareUrl}`} target="_blank" rel="noopener noreferrer" className="text-blue-600">
           <FaFacebook size={24} />
         </a>
-        <a href={`https://twitter.com/intent/tweet?url=${window.location.href}`} target="_blank" rel="noopener noreferrer" className="text-blue-400">
+        <a href={`https://twitter.com/intent/tweet?url=${shareUrl}`} target="_blank" rel="noopener noreferrer" className="text-blue-400">
           <FaTwitter size={24} />
         </a>
-        <a href={`https://instagram.com/share?url=${window.location.href}`} target="_blank" rel="noopener noreferrer" className="text-pink-600">
+        <a href={`https://instagram.com/share?url=${shareUrl}`} target="_blank" rel="noopener noreferrer" className="text-pink-600">
           <FaInstagram size={24} />
         </a>
-        <a href={`https://linkedin.com/shareArticle?url=${window.location.href}`} target="_blank" rel="noopener noreferrer" className="text-blue-700">
+        <a href={`https://linkedin.com/shareArticle?url=${shareUrl}`} target="_blank" rel="noopener noreferrer" className="text-blue-700">
           <FaLinkedin size={24} />
         </a>
       </div>

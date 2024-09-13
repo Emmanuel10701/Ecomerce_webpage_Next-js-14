@@ -1,20 +1,19 @@
 import { NextResponse } from 'next/server';
-import prisma from '../../../../libs/prismadb'; // Adjust the path to your Prisma client
+import prisma from '../../../../libs/prismadb'; // Adjust the path as needed
 
-// Define the Product interface
 interface Product {
   id: string;
   name: string;
   description: string;
   price: number;
   oldPrice?: number;
-  isFlashSale: boolean;
   ratings: number;
   image?: string;
+  quantity?: number;
   createdAt: string;
+  category?: string;
 }
 
-// Handler function for API routes
 export async function handler(req: Request, { params }: { params: { id: string } }) {
   const { id } = params;
 
@@ -25,8 +24,8 @@ export async function handler(req: Request, { params }: { params: { id: string }
   try {
     if (req.method === 'GET') {
       // Handle GET request to fetch product by ID
-      const product: Product | null = await prisma.product.findUnique({
-        where: { id: String(id) },
+      const product = await prisma.product.findUnique({
+        where: { id: String(id) }
       });
 
       if (!product) {
@@ -37,17 +36,17 @@ export async function handler(req: Request, { params }: { params: { id: string }
 
     } else if (req.method === 'DELETE') {
       // Handle DELETE request to delete product by ID
-      const deletedProduct: Product = await prisma.product.delete({
-        where: { id: String(id) },
+      const deletedProduct = await prisma.product.delete({
+        where: { id: String(id) }
       });
-
       return NextResponse.json(deletedProduct);
 
     } else {
+      // Handle unsupported methods
       return NextResponse.json({ error: 'Method Not Allowed' }, { status: 405 });
     }
   } catch (error: any) {
     console.error(`Error handling ${req.method} request:`, error);
-    return NextResponse.json({ error: `Error handling ${req.method} request`, details: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Internal Server Error', details: error.message }, { status: 500 });
   }
 }
