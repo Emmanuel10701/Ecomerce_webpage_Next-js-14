@@ -60,6 +60,7 @@ const histogramData: HistogramData[] = [
 const MainComponent: React.FC = () => {
   const { data: session, status } = useSession();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false); // Add this state
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(false); // Add loading state
   const router = useRouter();
@@ -176,7 +177,6 @@ const MainComponent: React.FC = () => {
       </div>
     );
   }
-
   if (!session) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-100">
@@ -186,14 +186,14 @@ const MainComponent: React.FC = () => {
           <button 
             onClick={handleLogin} 
             className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition duration-300"
+            disabled={isProcessing} // Disable button while processing
           >
-            Go to Login Page
+            {isProcessing ? 'Processing...' : 'Go to Login Page'}
           </button>
         </div>
       </div>
     );
   }
-
   return (
     <div className="relative flex h-screen">
       {/* Sidebar */}

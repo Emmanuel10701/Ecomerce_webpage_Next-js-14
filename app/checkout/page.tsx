@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useCart } from '../../context/page'; // Adjust to your actual path
 import { Elements, CardNumberElement, CardExpiryElement, CardCvcElement, useElements, useStripe } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
+import { CircularProgress } from '@mui/material';
 
 // Make sure to replace this with your own Stripe public key
 const stripePromise = loadStripe('your-stripe-public-key');
@@ -22,6 +23,7 @@ const CheckoutPage: React.FC = () => {
     phoneNumber: '',
     amount: 0,
   });
+  const [loading, setLoading] = useState(false);
 
   const stripe = useStripe();
   const elements = useElements();
@@ -76,10 +78,12 @@ const CheckoutPage: React.FC = () => {
 
   const handleCheckout = async (event: React.FormEvent) => {
     event.preventDefault();
+    setLoading(true);
 
     if (paymentMethod === 'card') {
       if (!stripe || !elements) {
         console.error('Stripe.js or Elements not loaded.');
+        setLoading(false);
         return;
       }
 
@@ -89,22 +93,16 @@ const CheckoutPage: React.FC = () => {
 
       if (!cardNumber || !cardExpiry || !cardCvc) {
         console.error('Card Elements are not loaded.');
+        setLoading(false);
         return;
       }
 
-      const { token, error } = await stripe.createToken({
-        type: 'card',
-        card: {
-          number: cardNumber?.value,
-          exp_month: cardExpiry?.value.split('/')[0],
-          exp_year: cardExpiry?.value.split('/')[1],
-          cvc: cardCvc?.value,
-        },
-      });
+      const { token, error } = await stripe.createToken(cardNumber); // Pass only the element
 
       if (error) {
         console.error('Error creating Stripe token:', error);
         alert('Error processing payment.');
+        setLoading(false);
         return;
       }
 
@@ -128,6 +126,8 @@ const CheckoutPage: React.FC = () => {
       } catch (error) {
         console.error('Card payment error:', error);
         alert('Error processing payment.');
+      } finally {
+        setLoading(false);
       }
     } else if (paymentMethod === 'mpesa') {
       try {
@@ -160,6 +160,8 @@ const CheckoutPage: React.FC = () => {
       } catch (error) {
         console.error('M-Pesa payment error:', error);
         alert('Error sending M-Pesa payment request.');
+      } finally {
+        setLoading(false);
       }
     }
   };
@@ -187,7 +189,7 @@ const CheckoutPage: React.FC = () => {
           </div>
           <div className="mt-8 flex justify-between items-center font-semibold">
             <span className='text-lg text-slate-500'>Total</span>
-            <span className='text-slate-400 font-bold text-xl text-underline'>KSh {total.toFixed(2)}</span>
+            <span className='text-slate-400 font-bold text-xl'>KSh {total.toFixed(2)}</span>
           </div>
         </div>
 
@@ -320,9 +322,17 @@ const CheckoutPage: React.FC = () => {
 
             <button
               type="submit"
-              className="w-full mt-6 bg-blue-600 text-white p-3 rounded-lg shadow-lg hover:bg-blue-700 transition-colors"
+              className={`w-full mt-6 p-3 rounded-lg shadow-lg transition-colors ${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+              disabled={loading}
             >
-              Complete Purchase
+              {loading ? (
+                <div className="flex items-center justify-center">
+                  <CircularProgress size={24} color="inherit" />
+                  <span className="ml-2">Processing...</span>
+                </div>
+              ) : (
+                'Complete Purchase'
+              )}
             </button>
           </form>
         </div>

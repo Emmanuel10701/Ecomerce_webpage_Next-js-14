@@ -1,35 +1,57 @@
-// pages/api/save-event.ts
-import type { NextApiRequest, NextApiResponse } from 'next';
-import prisma from '../../../libs/prismadb';
+import { NextResponse } from 'next/server';
+import nodemailer from 'nodemailer';
 
-// Define the event type based on your Prisma schema
-interface Event {
-  title: string;
-  date: string;
-  color: string;
+interface EmailRequest {
+  name: string;  
+  email: string;
+  message: string;
+  recipients: string[]; // Added recipients as an array
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method === 'POST') {
-    const { event }: { event: Event } = req.body;
+export async function POST(request: Request) {
+  try {
+    const { name, email, message, recipients }: EmailRequest = await request.json();
 
-    try {
-      // Save event to the database
-      const newEvent = await prisma.event.create({
-        data: {
-          title: event.title,
-          date: event.date,
-          color: event.color, // Ensure your Prisma schema has a color field
-        },
-      });
-
-      res.status(200).json({ message: 'Event saved successfully', event: newEvent });
-    } catch (error) {
-      console.error('Error saving event:', error);
-      res.status(500).json({ error: 'Failed to save event' });
+    // Validate input
+    if (!name || !email || !message || !recipients || recipients.length === 0) {
+      return NextResponse.json({ error: 'Name, email, message, and recipients are required' }, { status: 400 });
     }
-  } else {
-    res.setHeader('Allow', ['POST']);
-    res.status(405).end(`Method ${req.method} Not Allowed`);
+
+    // Create a transporter object using SMTP transport
+    const transporter = nodemailer.createTransport({
+      service: 'gmail', // Replace with your email service
+      auth: {
+        user: process.env.EMAIL_USER, 
+        pass: process.env.EMAIL_PASS, 
+      },
+    });
+
+    // Email options
+    const mailOptions = {
+      from: process.env.EMAIL_USER, 
+      to: recipients.join(', '), // Join recipients into a string
+      subject: 'New Message from ' + name,
+      text: `Message from: ${name}\n\n${message}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; border-radius: 5px;">
+          <h2 style="color: #333;">New Message from ${name}</h2>
+          <p style="color: #555;">You have received a new message:</p>
+          <div style="background-color: #fff; padding: 15px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+            <p><strong>Name:</strong> ${name}</p>
+            <p><strong>Email:</strong> ${email}</p>
+            <p><strong>Message:</strong></p>
+            <p>${message}</p>
+          </div>
+          <p style="color: #777; font-size: 12px; margin-top: 20px;">This email was sent from your contact form.</p>
+        </div>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    return NextResponse.json({ message: 'Email sent successfully' }, { status: 200 });
+  } catch (error) {
+    console.error('Error sending email:', error);
+    return NextResponse.json({ error: 'Error sending email' }, { status: 500 });
   }
 }

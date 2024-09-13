@@ -4,8 +4,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import LoadingSpinner from '@/components/spinner/page';
-import Sidebar from '@/components/sidebar/page';
+import LoadingSpinner from '@/components/spinner/page'; // Make sure this is the correct path
+import Sidebar from '@/components/sidebar/page'; // Make sure this is the correct path
 import { FaSync, FaEnvelope, FaFilePdf, FaEllipsisV } from 'react-icons/fa';
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
@@ -38,6 +38,8 @@ const EmployeePage: React.FC = () => {
   const [emailBody, setEmailBody] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [showAccessDenied, setShowAccessDenied] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false); // Add this state
+
   const dropdownRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -45,7 +47,9 @@ const EmployeePage: React.FC = () => {
   const { data: session, status } = useSession();
   
   const handleLogin = () => {
-    router.push("/login");
+    setIsProcessing(true); // Set processing state to true
+    router.push("/login")
+ ;
   };
 
   useEffect(() => {
@@ -202,8 +206,9 @@ const EmployeePage: React.FC = () => {
           <button 
             onClick={handleLogin} 
             className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition duration-300"
+            disabled={isProcessing} // Disable button while processing
           >
-            Go to Login Page
+            {isProcessing ? 'Processing...' : 'Go to Login Page'}
           </button>
         </div>
       </div>
@@ -297,19 +302,19 @@ const EmployeePage: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-    {filteredEmployees.map((employee, index) => (
-      <tr
-        key={employee.id}
-        onClick={() => handleRowClick(employee.id)}
-        className={`cursor-pointer ${index % 2 === 0 ? 'bg-indigo-50' : 'bg-indigo-100'} hover:bg-indigo-200`}
-      >
-        <td className="py-2 px-4">{employee.name}</td>
-        <td className="py-2 px-4">{employee.email}</td>
-        <td className="py-2 px-4">{employee.role}</td>
-        <td className="py-2 px-4">{moment(employee.dateAdded).format('MMMM Do YYYY')}</td>
-      </tr>
-    ))}
-  </tbody>
+                {filteredEmployees.map((employee, index) => (
+                  <tr
+                    key={employee.id}
+                    onClick={() => handleRowClick(employee.id)}
+                    className={`cursor-pointer ${index % 2 === 0 ? 'bg-indigo-50' : 'bg-indigo-100'} hover:bg-indigo-200`}
+                  >
+                    <td className="py-2 px-4">{employee.name}</td>
+                    <td className="py-2 px-4">{employee.email}</td>
+                    <td className="py-2 px-4">{employee.role}</td>
+                    <td className="py-2 px-4">{moment(employee.dateAdded).format('MMMM Do YYYY')}</td>
+                  </tr>
+                ))}
+              </tbody>
             </table>
           )}
 

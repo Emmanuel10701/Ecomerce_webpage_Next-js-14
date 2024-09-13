@@ -7,7 +7,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import Modal from 'react-modal';
 import Pagination from '@/components/paginationP/page'; // Ensure this is correctly set up with pageSize prop
 import Sidebar from '@/components/sidebar/page'; // Import Sidebar
-import { useSession } from 'next-auth/react';
+import { useSession, signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { FaSync } from 'react-icons/fa';
 import StarRating from '@/components/starRating/page'; // Adjust the import path as needed
@@ -89,7 +89,7 @@ const ViewProductModal: React.FC<ViewProductModalProps> = ({ isOpen, onRequestCl
 );
 
 const ListProducts: React.FC = () => {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
@@ -97,6 +97,7 @@ const ListProducts: React.FC = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -107,6 +108,27 @@ const ListProducts: React.FC = () => {
   const pageSize = 10;
   const DEFAULT_IMAGE = '/path/to/default-image.jpg'; // Replace with the path to your default image
 
+  const route = useRouter();
+  const handleLogin = () => {
+    setIsProcessing(true);
+    route.push("/login");
+  };
+
+  useEffect(() => {
+    if (status === 'loading') {
+      setLoading(true);
+      return;
+    }
+
+    if (!session) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(false);
+    fetchProducts();
+  }, [session, status]);
+
   const fetchProducts = async () => {
     try {
       const response = await axios.get('/actions/products');
@@ -115,8 +137,6 @@ const ListProducts: React.FC = () => {
     } catch (error) {
       console.error(error);
       toast.error('Failed to fetch products.');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -136,7 +156,7 @@ const ListProducts: React.FC = () => {
       try {
         await axios.delete(`/actions/products/${selectedProduct.id}`);
         toast.success('Product deleted successfully!');
-        fetchProducts();
+        fetchProducts(); // Refresh product list
       } catch (error) {
         console.error(error);
         toast.error('Failed to delete product.');
@@ -164,20 +184,18 @@ const ListProducts: React.FC = () => {
     }
   };
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setIsRefreshing(true);
-    fetchProducts().finally(() => setIsRefreshing(false));
+    await fetchProducts();
+    setIsRefreshing(false);
   };
 
   const handleCloseModals = () => {
     setIsDeleteModalOpen(false);
     setIsViewModalOpen(false);
+    setIsAccessDeniedModalOpen(false);
     setSelectedProduct(null);
   };
-
-  useEffect(() => {
-    fetchProducts();
-  }, []);
 
   useEffect(() => {
     let filtered = products.filter(product =>
@@ -190,6 +208,35 @@ const ListProducts: React.FC = () => {
   }, [searchTerm, products, selectedCategory]);
 
   const isAdmin = session?.user?.role === 'ADMIN';
+
+  if (status === 'loading') {
+    return <div className="flex items-center justify-center min-h-screen bg-gray-100"><CircularProgress /></div>;
+  }
+
+  if (!session) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-100">
+        <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-sm text-center">
+          <h2 className="text-2xl font-bold mb-4">Please Log In</h2>
+          <p className="mb-6">You need to log in or register to access this page.</p>
+          <button 
+            onClick={handleLogin} 
+            className={`bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition duration-300 ${isProcessing ? 'cursor-not-allowed' : ''}`}
+            disabled={isProcessing}
+          >
+            {isProcessing ? (
+              <div className="flex items-center justify-center">
+                <CircularProgress size={24} color="inherit" />
+                <span className="ml-2">Processing...</span>
+              </div>
+            ) : (
+              'Go to Login Page'
+            )}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -205,33 +252,34 @@ const ListProducts: React.FC = () => {
                 Add Product
               </button>
             )}
+            <button
+              onClick={handleRefresh}
+              className="bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600 outline-none focus:outline-black transition duration-300 flex items-center"
+              disabled={isRefreshing}
+            >
+              {isRefreshing ? <CircularProgress size={24} /> : <FaSync className="mr-2" />}
+              Refresh
+            </button>
             <input
               type="text"
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              placeholder="Search products..."
-              className="border p-2 rounded-md w-full max-w-xs mb-2"
+              placeholder="Search..."
+              className="ml-4 p-2 border border-gray-300 rounded"
             />
-            <button
-              onClick={handleRefresh}
-              className="bg-blue-500 text-white py-1.5 px-3 rounded-full hover:bg-blue-600 transition duration-300 flex items-center"
-            >
-              <FaSync className="mr-2" />
-              Refresh
-            </button>
             <select
               value={selectedCategory}
               onChange={e => setSelectedCategory(e.target.value)}
-              className="border p-2 rounded-md w-full max-w-xs"
+              className="ml-4 p-2 border border-gray-300 rounded"
             >
               <option value="All">All Categories</option>
+              <option value="Electronics">Electronics</option>
               <option value="Accessories">Accessories</option>
               <option value="Groceries">Groceries</option>
               <option value="Fashions">Fashions</option>
               <option value="Home Appliances">Home Appliances</option>
               <option value="Kids">Kids</option>
             </select>
-
           </div>
           {loading ? (
             <div className="flex justify-center items-center h-96">

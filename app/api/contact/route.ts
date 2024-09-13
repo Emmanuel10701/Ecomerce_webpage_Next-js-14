@@ -1,57 +1,56 @@
-import nodemailer from 'nodemailer';
 import { NextResponse } from 'next/server';
+import nodemailer from 'nodemailer';
 
-
-// Define the interface for the request data
-interface ContactData {
-  name: string;
+interface EmailRequest {
+  name: string;  // Added name to the interface
   email: string;
   message: string;
 }
 
-export async function POST(req: Request) {
+export async function POST(request: Request) {
   try {
-    // Parse the incoming request body
-    const data: ContactData = await req.json();
+    const { name, email, message }: EmailRequest = await request.json();
 
-    // Validate input data
-    if (!data.name || !data.email || !data.message) {
-      return NextResponse.json({ error: 'All fields are required.' }, { status: 400 });
+    // Validate input
+    if (!name || !email || !message) {
+      return NextResponse.json({ error: 'Name, email, and message are required' }, { status: 400 });
     }
 
-    // Configure the transporter for Nodemailer
+    // Create a transporter object using SMTP transport
     const transporter = nodemailer.createTransport({
-      port: 587, // Use 587 for TLS
-      host: 'smtp.gmail.com',
-      secure: false, // Set to true if using port 465 with SSL
+      service: 'gmail', // Replace with your email service
       auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-      tls: {
-        rejectUnauthorized: false,
+        user: process.env.EMAIL_USER, // Your email address
+        pass: process.env.EMAIL_PASS, // Your email password
       },
     });
 
-    // Construct the email body
-    const body = `
-      <p><strong>Name:</strong> ${data.name}</p>
-      <p><strong>Email:</strong> ${data.email}</p>
-      <p><strong>Message:</strong><br />${data.message}</p>
-    `;
+    // Email options
+    const mailOptions = {
+      from: process.env.EMAIL_USER, // Your email address
+      to: process.env.EMAIL_USER, // Recipient address
+      subject: 'New Message from ' + name, // Subject line
+      text: `Message from: ${name}\n\n${message}`, // Plain text body
+      html: `
+        <div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; border-radius: 5px;">
+          <h2 style="color: #333;">New Message from ${name}</h2>
+          <p style="color: #555;">You have received a new message:</p>
+          <div style="background-color: #fff; padding: 15px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+            <p><strong>Name:</strong> ${name}</p>
+            <p><strong>Email:</strong> ${email}</p>
+            <p><strong>Message:</strong></p>
+            <p>${message}</p>
+          </div>
+          <p style="color: #777; font-size: 12px; margin-top: 20px;">This email was sent from your contact form.</p>
+        </div>
+      `, // Enhanced HTML body
+    };
 
-    // Send the email
-    await transporter.sendMail({
-      from: `Website Contact Form <${process.env.EMAIL_USER}>`,
-      replyTo: data.email,
-      to: process.env.EMAIL_USER,
-      subject: `Contact form submission from ${data.name}`,
-      html: body,
-    });
+    await transporter.sendMail(mailOptions); // Send email
 
-    return NextResponse.json({ success: true }, { status: 200 });
-  } catch (error: any) {
-    console.error('Error sending email:', error);
-    return NextResponse.json({ error: 'Error sending email.', details: error.message }, { status: 500 });
+    return NextResponse.json({ message: 'Email sent successfully' }, { status: 200 });
+  } catch (error) {
+    console.error('Error sending email:', error); // Log the error
+    return NextResponse.json({ error: 'Error sending email' }, { status: 500 });
   }
 }

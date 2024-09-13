@@ -41,7 +41,9 @@ const UserManagement: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 5;
-    const router = useRouter();
+    const router = useRouter(); 
+ const [isProcessing, setIsProcessing] = useState(false); // Add this state
+
 
     useEffect(() => {
         const fetchData = async () => {
@@ -168,20 +170,21 @@ const UserManagement: React.FC = () => {
 
     if (!session) {
         return (
-            <div className="flex items-center justify-center min-h-screen bg-gray-100">
-                <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-sm text-center">
-                    <h2 className="text-2xl font-bold mb-4">Please Log In</h2>
-                    <p className="mb-6">You need to log in or register to access this page.</p>
-                    <button
-                        onClick={handleLogin}
-                        className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition duration-300"
-                    >
-                        Go to Login Page
-                    </button>
-                </div>
+          <div className="flex items-center justify-center min-h-screen bg-gray-100">
+            <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-sm text-center">
+              <h2 className="text-2xl font-bold mb-4">Please Log In</h2>
+              <p className="mb-6">You need to log in or register to access this page.</p>
+              <button 
+                onClick={handleLogin} 
+                className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition duration-300"
+                disabled={isProcessing} // Disable button while processing
+              >
+                {isProcessing ? 'Processing...' : 'Go to Login Page'}
+              </button>
             </div>
+          </div>
         );
-    }
+      }
 
     if (showAccessDeniedModal) {
         return (
@@ -244,7 +247,7 @@ const UserManagement: React.FC = () => {
                     <div className="lg:w-1/3">
                         <div className="mb-4">
                             <select
-                                className="bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 border border-gray-300 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 text-white"
+                                className="m rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 text-black-700"
                                 value={actionType}
                                 onChange={(e) => setActionType(e.target.value as 'addAdmin' | 'addEmployee' | 'removeAdmin' | 'removeEmployee')}
                             >
@@ -264,11 +267,11 @@ const UserManagement: React.FC = () => {
                             />
                         </div>
                         <div className="bg-white p-4 rounded-lg shadow-md">
-                            <h3 className="text-xl font-semibold mb-4 bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 text-transparent bg-clip-text">
+                            <h3 className="text-xl font-semibold mb-4 ">
                                 Select User
                             </h3>
                             <select
-                                className="bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 border border-gray-300 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 text-white"
+                                className=" border border-gray-300 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 text-black-700"
                                 value={selectedUser ? selectedUser.id : ''}
                                 onChange={(e) => {
                                     const user = users.find(user => user.id === e.target.value);
