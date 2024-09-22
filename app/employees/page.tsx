@@ -101,7 +101,7 @@ const EmployeePage: React.FC = () => {
       return;
     }
     try {
-      await axios.post('/api/send-email', {
+      await axios.post('/api/mailing', {
         emails: filteredEmployees.map(employee => employee.email).join(','), // Get emails of employees
         subject: emailSubject,
         body: emailBody,

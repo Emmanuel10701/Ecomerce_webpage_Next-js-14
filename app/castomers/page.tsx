@@ -119,7 +119,7 @@ const CustomerPage: React.FC = () => {
 
   const sendEmailContent = async () => {
     try {
-      await axios.post('/api/send-email', {
+      await axios.post('/api/mailing', {
         emails: filteredCustomers.map(customer => customer.email).join(','),
         subject: emailSubject,
         body: emailBody,

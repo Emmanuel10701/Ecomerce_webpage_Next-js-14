@@ -103,7 +103,7 @@ const UsersPage: React.FC = () => {
 
   const sendEmailContent = async () => {
     try {
-      await axios.post('/api/send-email', {
+      await axios.post('/api/mailing', {
         emails: filteredUsers.map(user => user.email).join(','),
         subject: emailSubject,
         body: emailBody,
