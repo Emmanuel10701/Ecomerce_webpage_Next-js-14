@@ -22,6 +22,7 @@ const ProductPage: React.FC<{ params: { id: string } }> = ({ params }) => {
   const [product, setProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [isCart, setIsInCart] = useState<string | null>(null);
   const [isReadMore, setIsReadMore] = useState<boolean>(false);
   const { state, dispatch } = useCart();
   const router = useRouter();
@@ -47,20 +48,23 @@ const ProductPage: React.FC<{ params: { id: string } }> = ({ params }) => {
 
   const isInCart = state.items.some(item => item.id === id);
 
-  const handleAddToCart = () => {
-    if (product) {
-      const actionType = isInCart ? 'REMOVE_FROM_CART' : 'ADD_TO_CART';
-      const payload = isInCart
-        ? { id: product.id }
-        : {
-            id: product.id,
-            name: product.name,
-            price: product.price,
-            quantity: 1,
-            imageUrl: product.image || '/default-image.jpg',
-          };
 
-      dispatch({ type: actionType, payload });
+  const handleAddToCart = () => {
+    if (isInCart) {
+      dispatch({ type: 'REMOVE_FROM_CART', payload: { id } });
+      setIsInCart(false);
+    } else {
+      dispatch({
+        type: 'ADD_TO_CART',
+        payload: {
+          id,
+          name,
+          price,
+          quantity: 1, // Assuming quantity is 1 for cart items
+          imageUrl,
+        },
+      });
+      setIsInCart(true);
     }
   };
 
