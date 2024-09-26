@@ -12,14 +12,16 @@ interface Product {
   name: string;
   price: number;
   oldPrice?: number;
-  image: string;
+  imageUrl?: string;
   description?: string;
   ratings?: number;
+  category?: string;
 }
 
 const ProductPage: React.FC<{ params: { id: string } }> = ({ params }) => {
   const { id } = params;
   const [product, setProduct] = useState<Product | null>(null);
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isReadMore, setIsReadMore] = useState<boolean>(false);
@@ -30,14 +32,16 @@ const ProductPage: React.FC<{ params: { id: string } }> = ({ params }) => {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const response = await fetch(`/actions/products/${id}`, {
-          method: 'GET', // Ensure you're using the GET method
-        });
-
+        const response = await fetch(`/actions/products/${id}`, { method: 'GET' });
         if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
 
         const data: Product = await response.json();
         setProduct(data);
+
+        // Fetch related products based on category
+        const relatedResponse = await fetch(`/actions/products?category=${data.category}`, { method: 'GET' });
+        const relatedData: Product[] = await relatedResponse.json();
+        setRelatedProducts(relatedData.slice(0, 4)); // Limit to 4 items
       } catch (err: any) {
         setError(`Failed to load product: ${err.message}`);
       } finally {
@@ -61,7 +65,7 @@ const ProductPage: React.FC<{ params: { id: string } }> = ({ params }) => {
           name: product.name,
           price: product.price,
           quantity: 1,
-          imageUrl: product.image,
+          imageUrl: product.imageUrl || '/placeholder.jpg', // Fallback image URL
         },
       });
     }
@@ -102,7 +106,7 @@ const ProductPage: React.FC<{ params: { id: string } }> = ({ params }) => {
         <div className="w-full md:w-2/4 flex flex-col items-center">
           <div className="relative w-full flex justify-center mb-4">
             <Image
-              src={product.image || '/placeholder.jpg'}
+              src={product.imageUrl || '/placeholder.jpg'}
               alt={`Image of ${product.name}`}
               width={600}
               height={600}
@@ -125,6 +129,20 @@ const ProductPage: React.FC<{ params: { id: string } }> = ({ params }) => {
               <span className="text-sm text-gray-500 line-through">${product.oldPrice.toFixed(2)}</span>
             )}
           </div>
+          <div className="flex space-x-4 mt-8">
+        <Link href={`https://facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl)}`} target="_blank" rel="noopener noreferrer" className="text-blue-600">
+          <FaFacebook size={24} />
+        </Link>
+        <Link href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(currentUrl)}`} target="_blank" rel="noopener noreferrer" className="text-blue-400">
+          <FaTwitter size={24} />
+        </Link>
+        <Link href={`https://instagram.com/share?url=${encodeURIComponent(currentUrl)}`} target="_blank" rel="noopener noreferrer" className="text-pink-600">
+          <FaInstagram size={24} />
+        </Link>
+        <Link href={`https://linkedin.com/shareArticle?url=${encodeURIComponent(currentUrl)}`} target="_blank" rel="noopener noreferrer" className="text-blue-700">
+          <FaLinkedin size={24} />
+        </Link>
+      </div>
           {product.ratings && (
             <div className="mb-4">
               <StarRating rating={product.ratings} />
@@ -133,7 +151,10 @@ const ProductPage: React.FC<{ params: { id: string } }> = ({ params }) => {
           <p className="mb-4">
             {isReadMore ? fullDescription : descriptionSnippet}
             {product.description && (
-              <button onClick={() => setIsReadMore(!isReadMore)} className="text-blue-600 hover:underline">
+              <button
+                onClick={() => setIsReadMore(!isReadMore)}
+                className={`text-blue-600 hover:underline ${isReadMore ? 'hidden md:inline' : 'inline'}`}
+              >
                 {isReadMore ? 'Read less' : 'Read more'}
               </button>
             )}
@@ -157,19 +178,28 @@ const ProductPage: React.FC<{ params: { id: string } }> = ({ params }) => {
         </div>
       </div>
 
-      <div className="flex space-x-4 mt-8">
-        <Link href={`https://facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl)}`} target="_blank" rel="noopener noreferrer" className="text-blue-600">
-          <FaFacebook size={24} />
-        </Link>
-        <Link href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(currentUrl)}`} target="_blank" rel="noopener noreferrer" className="text-blue-400">
-          <FaTwitter size={24} />
-        </Link>
-        <Link href={`https://instagram.com/share?url=${encodeURIComponent(currentUrl)}`} target="_blank" rel="noopener noreferrer" className="text-pink-600">
-          <FaInstagram size={24} />
-        </Link>
-        <Link href={`https://linkedin.com/shareArticle?url=${encodeURIComponent(currentUrl)}`} target="_blank" rel="noopener noreferrer" className="text-blue-700">
-          <FaLinkedin size={24} />
-        </Link>
+    
+
+      {/* Related Products Section */}
+      <div className="mt-8">
+        <h2 className="text-xl font-semibold mb-4">Related Products</h2>
+        <div className="flex space-x-4 overflow-x-auto">
+          {relatedProducts.map((relatedProduct) => (
+            <div key={relatedProduct.id} className="w-1/4 min-w-[150px] flex flex-col items-center">
+              <Link href={`/Productslistpage/${relatedProduct.id}`}>
+                <Image
+                  src={relatedProduct.imageUrl || '/placeholder.jpg'}
+                  alt={`Image of ${relatedProduct.name}`}
+                  width={150}
+                  height={150}
+                  className="rounded-lg mb-2"
+                />
+                <h3 className="text-sm font-bold text-indigo-600">{relatedProduct.name}</h3>
+                <span className="text-sm">${relatedProduct.price.toFixed(2)}</span>
+              </Link>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
