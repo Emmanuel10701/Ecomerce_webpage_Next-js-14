@@ -70,10 +70,10 @@ const authOptions: NextAuthOptions = {
     }),
   ],
   pages: {
-    signIn: '/auth/signin',
-    error: '/auth/signin', // Redirect to sign-in page on error
+    signIn: '/auth/signIn',
+    error: '/auth/signIn', // Redirect to sign-in page on error
   },
-  secret: process.env.AUTH_SECRET!,
+  secret: process.env.JWT_SECRET!,
   session: {
     strategy: "jwt",
     maxAge: 60 * 60, // Session will expire in 60 minutes

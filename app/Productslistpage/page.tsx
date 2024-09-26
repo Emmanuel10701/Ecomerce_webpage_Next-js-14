@@ -40,7 +40,7 @@ const HomePage: React.FC = () => {
     categorys: {} as Record<string, boolean>, // Initialize as an empty Record
   });
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10; // Updated to 10 items per page
+  const itemsPerPage = 12; // Updated to 10 items per page
 
   const images = [
     { src: '/images/2.jpg', text: 'E-commerce Deals' },

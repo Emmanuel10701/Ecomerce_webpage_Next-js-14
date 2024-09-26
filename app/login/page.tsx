@@ -100,7 +100,7 @@ const Login = () => {
           <button
             type="button"
             className="text-blue-500 text-sm hover:underline"
-            onClick={() => router.push("/forgot-password")}
+            onClick={() => router.push("/forgot")}
           >
             Forgot password?
           </button>

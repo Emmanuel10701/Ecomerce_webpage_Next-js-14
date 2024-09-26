@@ -51,11 +51,11 @@ model User {
 
 
 
-model Subscriber {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  email     String   @unique
-  createdAt DateTime @default(now()) // This ensures that createdAt is never null
-  role      Role     @default(USER)
+model Subscription {
+  id                   String   @id @default(auto()) @map("_id") @db.ObjectId
+  email                String   @unique
+  createdAt            DateTime @default(now())
+  
 }
 
 model Account {

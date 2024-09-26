@@ -1,18 +1,26 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/router';
+import CircularProgress from '@mui/material/CircularProgress';
+import { FaCheckCircle } from 'react-icons/fa';
 
 const ResetPassword = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [token, setToken] = useState<string | null>(null); // Added state for token
   const router = useRouter();
-  const { token } = router.query;
 
-  // Function to handle form submission
+  useEffect(() => {
+    // Safely set the token when router.query is available
+    if (router.query.token) {
+      setToken(router.query.token as string);
+    }
+  }, [router.query]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -24,14 +32,13 @@ const ResetPassword = () => {
     }
 
     try {
-      // Send request to the reset password API
-      await axios.post('/api/auth/reset-pasword', { token, password });
-
-      // Display success message and redirect to the login page
+      await axios.post('/api/auth/reset-password', { token, password });
       setMessage('Password has been reset successfully.');
-      setTimeout(() => router.push('/login'), 2000);
+      setTimeout(() => {
+        setMessage('');
+        router.push('/login');
+      }, 2000);
     } catch (error) {
-      // Handle error and display an error message
       setMessage('Error resetting password. Please try again.');
     } finally {
       setLoading(false);
@@ -77,13 +84,17 @@ const ResetPassword = () => {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !token}
             className={`w-full bg-blue-600 text-white py-3 rounded-md hover:bg-blue-700 transition duration-200 ${loading ? 'cursor-not-allowed opacity-50' : ''}`}
           >
-            {loading ? 'Resetting...' : 'Reset Password'}
+            {loading ? <CircularProgress size={24} color="inherit" /> : 'Reset Password'}
           </button>
 
-          {message && <p className="mt-4 text-center text-red-600">{message}</p>}
+          {message && (
+            <p className={`mt-4 text-center ${message.startsWith('Error') ? 'text-red-600' : 'text-green-600 flex items-center justify-center'}`}>
+              {message.startsWith('Error') ? message : <><FaCheckCircle className="mr-2" /> {message}</>}
+            </p>
+          )}
         </form>
       </div>
     </div>

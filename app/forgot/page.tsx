@@ -1,13 +1,14 @@
 "use client";
 import { useState } from 'react';
 import axios from 'axios';
+import Link from 'next/link';
+import { FaCheckCircle } from 'react-icons/fa'; // Import the React icon
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Function to validate email format
   const isValidEmail = (email: string) => {
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailPattern.test(email);
@@ -20,11 +21,13 @@ const ForgotPassword = () => {
       return;
     }
     setLoading(true);
+    setMessage(''); // Clear previous messages
     try {
       await axios.post('/api/auth/forgot-password', { email }, {
         headers: { 'Content-Type': 'application/json' }
       });
       setMessage('Password reset email sent. Please check your inbox.');
+      setTimeout(() => setMessage(''), 4000); // Clear message after 4 seconds
     } catch (error) {
       console.error('Error sending password reset email:', error);
       setMessage('Error sending password reset email.');
@@ -34,10 +37,10 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className={`flex items-center justify-center min-h-screen p-4 transition-opacity duration-300 ${loading ? 'bg-gray-100 opacity-70' : 'bg-gray-100'}`}>
-      <div className="w-full max-w-md bg-white p-6 md:p-8 rounded-xl shadow-lg">
-        <h2 className="text-2xl md:text-3xl font-semibold text-gray-900 mb-4">Forgot Password</h2>
-        <p className="text-gray-600 mb-6">Enter your email address below to receive a password reset link.</p>
+    <div className={`flex items-center justify-center min-h-screen p-4 transition-opacity duration-300 ${loading ? 'bg-gray-200 opacity-70' : 'bg-gray-200'}`}>
+      <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow-lg">
+        <h2 className="text-3xl font-semibold text-gray-900 mb-4">Forgot Your Password?</h2>
+        <p className="text-gray-600 mb-6">Enter your email to receive a password reset link.</p>
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label className="block text-gray-700 font-medium mb-2" htmlFor="email">Email Address</label>
@@ -46,7 +49,7 @@ const ForgotPassword = () => {
               id="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-150 ease-in-out"
+              className="w-full p-4 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-150 ease-in-out"
               placeholder="you@example.com"
               required
             />
@@ -54,12 +57,27 @@ const ForgotPassword = () => {
           <button
             type="submit"
             disabled={loading || !isValidEmail(email)}
-            className={`w-full py-3 rounded-xl text-white transition duration-150 ease-in-out ${loading || !isValidEmail(email) ? 'bg-blue-500 opacity-60 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
+            className={`w-full py-3 rounded-lg text-white transition duration-150 ease-in-out ${loading || !isValidEmail(email) ? 'bg-blue-500 opacity-60 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
           >
-            {loading ? 'Sending...' : 'Send Reset Link'}
+            {loading ? (
+              <span className="flex items-center justify-center">
+                <svg className="animate-spin h-5 w-5 mr-3 text-white" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12c0-1.6.4-3.1 1-4.4l3.3 3.3-3.3 3.3C4.4 13.1 4 11.6 4 12zm16 0c0 1.6-.4 3.1-1 4.4l-3.3-3.3 3.3-3.3c.6 1.3 1 2.8 1 4.4z"></path>
+                </svg>
+                Sending...
+              </span>
+            ) : 'Send Reset Link'}
           </button>
-          {message && <p className="mt-4 text-center text-red-600">{message}</p>}
+          {message && (
+            <p className="mt-4 text-center text-green-600 flex items-center justify-center">
+              <FaCheckCircle className="mr-2 w-10 h-10" /> {message}
+            </p>
+          )}
         </form>
+        <p className="mt-4 text-center text-gray-600">
+          Remembered your password? <Link href="/login" className="text-blue-600 hover:underline">Login here</Link>.
+        </p>
       </div>
     </div>
   );

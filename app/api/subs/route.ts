@@ -1,94 +1,50 @@
-import prisma from '../../../libs/prismadb'; // Ensure the path is correct
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import prisma from '../../../libs/prismadb'; // Adjust the import according to your project structure
 
-// POST request handler for creating a new subscriber
-export async function POST(req: NextRequest) {
+export async function POST(request: Request) {
+  const { email } = await request.json();
+
+  // Validate email
+  if (!email || !/\S+@\S+\.\S+/.test(email)) {
+    return NextResponse.json({ error: 'Invalid email address.' }, { status: 400 });
+  }
+
   try {
-    const { email } = await req.json();
-
-    // Validate email format
-    if (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return NextResponse.json({ message: 'Invalid email address' }, { status: 400 });
-    }
-
-    // Check if the email is already subscribed
-    const existingSubscriber = await prisma.subscriber.findUnique({
+    // Check if the email already exists
+    const existingSubscription = await prisma.subscription.findUnique({
       where: { email },
     });
 
-    if (existingSubscriber) {
-      return NextResponse.json({ message: 'Email already subscribed' }, { status: 400 });
+    if (existingSubscription) {
+      return NextResponse.json({ error: 'Email already exists.' }, { status: 409 }); // Conflict status
     }
 
-    // Add new subscriber
-    await prisma.subscriber.create({
+    // Create a new subscription
+    const subscription = await prisma.subscription.create({
       data: {
         email,
-        role: 'USER', // Default role
       },
     });
 
-    return NextResponse.json({ message: 'Subscription successful' });
-
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      console.error('Error in POST request:', {
-        message: error.message,
-        stack: error.stack,
-        name: error.name,
-      });
-      return NextResponse.json(
-        { message: 'Server error', error: error.message, details: error.stack },
-        { status: 500 }
-      );
-    } else {
-      console.error('Unexpected error in POST request:', error);
-      return NextResponse.json(
-        { message: 'Server error', error: 'Unexpected error occurred' },
-        { status: 500 }
-      );
-    }
+    return NextResponse.json({ message: 'Subscription successful!', subscription }, { status: 201 });
+  } catch (error) {
+    console.error('Error creating subscription:', error);
+    return NextResponse.json({ error: 'Subscription failed. Please try again later.' }, { status: 500 });
   }
 }
 
-// GET request handler for retrieving all subscribers
 export async function GET() {
   try {
-    const subscribers = await prisma.subscriber.findMany({
-      select: {
-        id: true,
-        email: true,
-        createdAt: true,
-        role: true,
+    // Fetch all subscriptions ordered from the latest to the oldest
+    const subscriptions = await prisma.subscription.findMany({
+      orderBy: {
+        createdAt: 'desc', // Assuming you have a `createdAt` field for timestamps
       },
     });
 
-    // Handle cases where createdAt might be null
-    const formattedSubscribers = subscribers.map(subscriber => ({
-      ...subscriber,
-      createdAt: subscriber.createdAt ?? new Date(), // Provide a default date if createdAt is null
-    }));
-
-    console.log('Retrieved subscribers:', formattedSubscribers);
-
-    return NextResponse.json(formattedSubscribers);
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      console.error('Database operation error:', {
-        message: error.message,
-        stack: error.stack,
-        name: error.name,
-      });
-      return NextResponse.json(
-        { error: 'Database operation failed', details: error.message },
-        { status: 500 }
-      );
-    } else {
-      console.error('Unexpected error in GET request:', error);
-      return NextResponse.json(
-        { error: 'Unexpected error occurred' },
-        { status: 500 }
-      );
-    }
+    return NextResponse.json(subscriptions, { status: 200 });
+  } catch (error) {
+    console.error('Error fetching subscriptions:', error);
+    return NextResponse.json({ error: 'Failed to fetch subscriptions.' }, { status: 500 });
   }
 }

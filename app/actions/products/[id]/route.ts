@@ -1,52 +1,56 @@
 import { NextResponse } from 'next/server';
 import prisma from '../../../../libs/prismadb'; // Adjust the path as needed
 
-interface Product {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  oldPrice?: number;
-  ratings: number;
-  image?: string;
-  quantity?: number;
-  createdAt: string;
-  category?: string;
-}
-
-export async function handler(req: Request, { params }: { params: { id: string } }) {
+// GET request to fetch a single product by ID
+export async function GET(request: Request, { params }: { params: { id: string } }) {
   const { id } = params;
 
-  if (!id) {
-    return NextResponse.json({ error: 'ID is required' }, { status: 400 });
+  try {
+    const product = await prisma.product.findUnique({
+      where: { id },
+    });
+
+    if (!product) {
+      return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+    }
+
+    return NextResponse.json(product);
+  } catch (error) {
+    console.error('Error fetching product:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
+}
+
+// PUT request to update a product by ID
+export async function PUT(request: Request, { params }: { params: { id: string } }) {
+  const { id } = params;
+  const data = await request.json();
 
   try {
-    if (req.method === 'GET') {
-      // Handle GET request to fetch product by ID
-      const product = await prisma.product.findUnique({
-        where: { id: String(id) }
-      });
+    const product = await prisma.product.update({
+      where: { id },
+      data,
+    });
 
-      if (!product) {
-        return NextResponse.json({ error: 'Product not found' }, { status: 404 });
-      }
+    return NextResponse.json(product);
+  } catch (error) {
+    console.error('Error updating product:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
 
-      return NextResponse.json(product);
+// DELETE request to remove a product by ID
+export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+  const { id } = params;
 
-    } else if (req.method === 'DELETE') {
-      // Handle DELETE request to delete product by ID
-      const deletedProduct = await prisma.product.delete({
-        where: { id: String(id) }
-      });
-      return NextResponse.json(deletedProduct);
+  try {
+    await prisma.product.delete({
+      where: { id },
+    });
 
-    } else {
-      // Handle unsupported methods
-      return NextResponse.json({ error: 'Method Not Allowed' }, { status: 405 });
-    }
-  } catch (error: any) {
-    console.error(`Error handling ${req.method} request:`, error);
-    return NextResponse.json({ error: 'Internal Server Error', details: error.message }, { status: 500 });
+    return NextResponse.json({ message: 'Product deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting product:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

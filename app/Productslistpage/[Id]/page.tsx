@@ -4,7 +4,8 @@ import { FaCartPlus, FaCartArrowDown, FaArrowLeft, FaFacebook, FaTwitter, FaInst
 import StarRating from '../../../components/star/page';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { useCart } from '../../../context/page'; // Adjust the path if needed
+import { useCart } from '../../../context/page';
+import Link from 'next/link';
 
 interface Product {
   id: string;
@@ -14,30 +15,31 @@ interface Product {
   image: string;
   description?: string;
   ratings?: number;
-  category?: string;
 }
 
 const ProductPage: React.FC<{ params: { id: string } }> = ({ params }) => {
-  const id = params.id;
+  const { id } = params;
   const [product, setProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [isCart, setIsInCart] = useState<string | null>(null);
   const [isReadMore, setIsReadMore] = useState<boolean>(false);
   const { state, dispatch } = useCart();
   const router = useRouter();
   const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
-  const shareUrl = encodeURIComponent(currentUrl);
 
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const response = await fetch(`/actions/products/${id}`);
+        const response = await fetch(`/actions/products/${id}`, {
+          method: 'GET', // Ensure you're using the GET method
+        });
+
         if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+
         const data: Product = await response.json();
         setProduct(data);
-      } catch (error: any) {
-        setError(`Failed to load product: ${error.message}`);
+      } catch (err: any) {
+        setError(`Failed to load product: ${err.message}`);
       } finally {
         setIsLoading(false);
       }
@@ -48,23 +50,20 @@ const ProductPage: React.FC<{ params: { id: string } }> = ({ params }) => {
 
   const isInCart = state.items.some(item => item.id === id);
 
-
   const handleAddToCart = () => {
     if (isInCart) {
       dispatch({ type: 'REMOVE_FROM_CART', payload: { id } });
-      setIsInCart(false);
-    } else {
+    } else if (product) {
       dispatch({
         type: 'ADD_TO_CART',
         payload: {
-          id,
-          name,
-          price,
-          quantity: 1, // Assuming quantity is 1 for cart items
-          imageUrl,
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          quantity: 1,
+          imageUrl: product.image,
         },
       });
-      setIsInCart(true);
     }
   };
 
@@ -79,37 +78,27 @@ const ProductPage: React.FC<{ params: { id: string } }> = ({ params }) => {
   if (error) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <p>{error}</p>
+        <p className="text-red-500">{error}</p>
       </div>
     );
   }
 
   if (!product) return null;
 
-  const discountPercentage = product.oldPrice
-    ? ((product.oldPrice - product.price) / product.oldPrice * 100).toFixed(0)
-    : '';
-  const descriptionSnippet = product.description
-    ? product.description.split(' ').slice(0, 10).join(' ') + '...'
-    : '';
+  const discountPercentage = product.oldPrice ? ((product.oldPrice - product.price) / product.oldPrice * 100).toFixed(0) : '';
+  const descriptionSnippet = product.description?.split(' ').slice(0, 10).join(' ') + '...';
   const fullDescription = product.description || '';
 
   return (
     <div className="container mx-auto p-4 mt-14 relative">
-      {/* Back Button */}
       <div className="absolute top-4 left-4">
-        <button
-          onClick={() => router.back()}
-          className="flex items-center text-blue-600 bg-slate-300 rounded-full px-2 py-1"
-        >
+        <button onClick={() => router.back()} className="flex items-center text-blue-600 bg-slate-300 rounded-full px-2 py-1">
           <FaArrowLeft size={18} />
           <span className="ml-2 text-sm">Back</span>
         </button>
       </div>
 
-      {/* Product Details */}
       <div className="flex flex-col md:flex-row">
-        {/* Product Image */}
         <div className="w-full md:w-2/4 flex flex-col items-center">
           <div className="relative w-full flex justify-center mb-4">
             <Image
@@ -128,7 +117,6 @@ const ProductPage: React.FC<{ params: { id: string } }> = ({ params }) => {
           </div>
         </div>
 
-        {/* Product Information */}
         <div className="w-full md:w-2/4 flex flex-col p-4">
           <h1 className="text-2xl font-bold mb-2">{product.name}</h1>
           <div className="flex items-center mb-4">
@@ -144,20 +132,15 @@ const ProductPage: React.FC<{ params: { id: string } }> = ({ params }) => {
           )}
           <p className="mb-4">
             {isReadMore ? fullDescription : descriptionSnippet}
-            {product.description && descriptionSnippet !== fullDescription && (
-              <button
-                onClick={() => setIsReadMore(!isReadMore)}
-                className="text-blue-600 hover:underline"
-              >
+            {product.description && (
+              <button onClick={() => setIsReadMore(!isReadMore)} className="text-blue-600 hover:underline">
                 {isReadMore ? 'Read less' : 'Read more'}
               </button>
             )}
           </p>
           <button
             onClick={handleAddToCart}
-            className={`flex items-center justify-center py-2 px-4 rounded-lg text-white transition-colors ${
-              isInCart ? 'bg-red-600' : 'bg-green-600'
-            }`}
+            className={`flex items-center justify-center py-2 px-4 rounded-lg text-white transition-colors ${isInCart ? 'bg-red-600' : 'bg-green-600'}`}
           >
             {isInCart ? (
               <>
@@ -174,20 +157,19 @@ const ProductPage: React.FC<{ params: { id: string } }> = ({ params }) => {
         </div>
       </div>
 
-      {/* Social Media Links */}
       <div className="flex space-x-4 mt-8">
-        <a href={`https://facebook.com/sharer/sharer.php?u=${shareUrl}`} target="_blank" rel="noopener noreferrer" className="text-blue-600">
+        <Link href={`https://facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl)}`} target="_blank" rel="noopener noreferrer" className="text-blue-600">
           <FaFacebook size={24} />
-        </a>
-        <a href={`https://twitter.com/intent/tweet?url=${shareUrl}`} target="_blank" rel="noopener noreferrer" className="text-blue-400">
+        </Link>
+        <Link href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(currentUrl)}`} target="_blank" rel="noopener noreferrer" className="text-blue-400">
           <FaTwitter size={24} />
-        </a>
-        <a href={`https://instagram.com/share?url=${shareUrl}`} target="_blank" rel="noopener noreferrer" className="text-pink-600">
+        </Link>
+        <Link href={`https://instagram.com/share?url=${encodeURIComponent(currentUrl)}`} target="_blank" rel="noopener noreferrer" className="text-pink-600">
           <FaInstagram size={24} />
-        </a>
-        <a href={`https://linkedin.com/shareArticle?url=${shareUrl}`} target="_blank" rel="noopener noreferrer" className="text-blue-700">
+        </Link>
+        <Link href={`https://linkedin.com/shareArticle?url=${encodeURIComponent(currentUrl)}`} target="_blank" rel="noopener noreferrer" className="text-blue-700">
           <FaLinkedin size={24} />
-        </a>
+        </Link>
       </div>
     </div>
   );

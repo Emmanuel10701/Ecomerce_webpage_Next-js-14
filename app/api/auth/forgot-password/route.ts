@@ -3,7 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../../../../libs/prismadb';
 import nodemailer from 'nodemailer';
-import crypto from 'crypto'; // For secure token generation
+import crypto from 'crypto';
 
 interface ForgotPasswordRequestBody {
   email: string;
@@ -11,35 +11,21 @@ interface ForgotPasswordRequestBody {
 
 export async function POST(request: NextRequest) {
   try {
-    const body: ForgotPasswordRequestBody = await request.json();
-    const { email } = body;
+    const { email }: ForgotPasswordRequestBody = await request.json();
 
-    // Validate input
     if (!email) {
-      return NextResponse.json(
-        { error: 'Email is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Email is required' }, { status: 400 });
     }
 
-    // Find the user by email
-    const user = await prisma.user.findUnique({
-      where: { email },
-    });
+    const user = await prisma.user.findUnique({ where: { email } });
 
     if (!user) {
-      // To prevent email enumeration, respond with a success message
-      return NextResponse.json(
-        { message: 'Password reset email sent' },
-        { status: 200 }
-      );
+      return NextResponse.json({ message: 'Password reset email sent' }, { status: 200 });
     }
 
-    // Generate a secure random token
     const token = crypto.randomBytes(32).toString('hex');
-    const expiry = new Date(Date.now() + 3600000); // Token valid for 1 hour
+    const expiry = new Date(Date.now() + 3600000); // Valid for 1 hour
 
-    // Store the token in the database
     await prisma.passwordReset.create({
       data: {
         token,
@@ -48,24 +34,20 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Create the reset link
     const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
 
-    // Create a transporter object using SMTP transport
     const transporter = nodemailer.createTransport({
-      service: 'gmail', // Use your email service
+      service: 'gmail',
       auth: {
-        user: process.env.EMAIL_USER, // Your email address
-        pass: process.env.EMAIL_PASS, // Your email password or app password
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
       },
     });
 
-    // Email options
     const mailOptions = {
-      from: process.env.EMAIL_USER, // Your email address
-      to: email, // Recipient's email address
+      from: process.env.EMAIL_USER,
+      to: email,
       subject: 'Password Reset Request',
-      text: `You requested a password reset. Click the following link to reset your password: ${resetLink}`,
       html: `
         <div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; border-radius: 5px;">
           <h2 style="color: #333;">Password Reset Request</h2>
@@ -76,19 +58,11 @@ export async function POST(request: NextRequest) {
       `,
     };
 
-    // Send the email
     await transporter.sendMail(mailOptions);
 
-    // Respond with a success message
-    return NextResponse.json(
-      { message: 'Password reset email sent' },
-      { status: 200 }
-    );
-  } catch (error: any) {
+    return NextResponse.json({ message: 'Password reset email sent' }, { status: 200 });
+  } catch (error) {
     console.error('Error during forgot password:', error);
-    return NextResponse.json(
-      { error: 'Internal Server Error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
