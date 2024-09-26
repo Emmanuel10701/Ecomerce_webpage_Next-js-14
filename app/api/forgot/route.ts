@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
-import prisma from '../../../../libs/prismadb'; // Adjust the path as needed
+import prisma from '../../../libs/prismadb'; // Adjust the path as needed
 import { v4 as uuidv4 } from 'uuid';
 
 const transporter = nodemailer.createTransport({
@@ -21,7 +21,7 @@ export async function POST(req: Request) {
     }
 
     const token = uuidv4(); // Generate a unique token
-    const resetLink = `${process.env.NEXT_PUBLIC_URL}/reset?token=${token}`;
+    const resetLink = `${process.env.NEXTAUTH_URL}/reset?token=${token}`;
 
     // Set expiration to 1 hour from now
     const expires = new Date(Date.now() + 3600000); // 1 hour in milliseconds

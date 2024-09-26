@@ -26,7 +26,6 @@ model Employee {
   id     String @id @default(auto()) @map("_id") @db.ObjectId
   name   String
   userId String @db.ObjectId
-  createdAt DateTime @default(now())
   role   Role   @default(STAFF)
   user   User   @relation(fields: [userId], references: [id])
 }
@@ -67,21 +66,21 @@ model Subscription {
   
 }
 
-model Account {
-  id                String  @id @default(auto()) @map("_id") @db.ObjectId
-  userId            String  @db.ObjectId
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String? @db.String
-  access_token      String? @db.String
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String? @db.String
-  session_state     String?
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+model Account {
+  id                   String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId               String   @db.ObjectId
+  type                 String
+  provider             String
+  providerAccountId    String
+  refresh_token        String?
+  access_token         String?
+  expires_at           Int?
+  token_type           String?
+  scope                String?
+  id_token             String?
+  session_state        String?
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
@@ -163,7 +162,7 @@ enum OrderStatus {
   PAID
 }
 model Event {
-  id        String @id @default(auto()) @map("_id") @db.ObjectId
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
   title      String   // Title of the event
   date       DateTime // Date of the event
   color      String   // Color associated with the event

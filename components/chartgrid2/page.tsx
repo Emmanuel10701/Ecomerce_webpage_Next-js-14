@@ -1,11 +1,15 @@
-// components/ChartGridComponent.tsx
-
 "use client";
 
-import React from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as LineTooltip } from 'recharts';
-import { ScatterChart, Scatter, XAxis as ScatterXAxis, YAxis as ScatterYAxis, Tooltip as ScatterTooltip } from 'recharts';
-import { PieChart, Pie, Cell, Tooltip as PieTooltip } from 'recharts';
+import React, { useEffect, useState } from 'react';
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as LineTooltip
+} from 'recharts';
+import {
+  ScatterChart, Scatter, XAxis as ScatterXAxis, YAxis as ScatterYAxis, Tooltip as ScatterTooltip
+} from 'recharts';
+import {
+  PieChart, Pie, Cell, Tooltip as PieTooltip
+} from 'recharts';
 
 // Define the data types
 interface LineChartData {
@@ -23,33 +27,60 @@ interface PieChartData {
   value: number;
 }
 
-// Sample data for charts
-const lineChartData: LineChartData[] = [
-  { name: 'Page A', value: 4000 },
-  { name: 'Page B', value: 3000 },
-  { name: 'Page C', value: 2000 },
-  { name: 'Page D', value: 2780 },
-  { name: 'Page E', value: 1890 },
-];
-
-const scatterPlotData: ScatterPlotData[] = [
-  { x: 1, y: 4000 },
-  { x: 2, y: 3000 },
-  { x: 3, y: 2000 },
-  { x: 4, y: 2780 },
-  { x: 5, y: 1890 },
-];
-
-const pieChartData: PieChartData[] = [
-  { name: 'Group A', value: 400 },
-  { name: 'Group B', value: 300 },
-  { name: 'Group C', value: 300 },
-  { name: 'Group D', value: 200 },
-];
-
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
 const ChartGridComponent: React.FC = () => {
+  const [lineChartData, setLineChartData] = useState<LineChartData[]>([]);
+  const [scatterPlotData, setScatterPlotData] = useState<ScatterPlotData[]>([]);
+  const [pieChartData, setPieChartData] = useState<PieChartData[]>([]);
+
+  useEffect(() => {
+    // Fetch line chart data (assuming API endpoints are correct)
+    const fetchLineChartData = async () => {
+      const response = await fetch('/api/subscribers');
+      const data = await response.json();
+      setLineChartData(data);
+    };
+
+    // Fetch scatter plot data (count of products and their prices)
+    const fetchScatterPlotData = async () => {
+      const response = await fetch('/actions/products');
+      const data = await response.json();
+      const formattedData = data.map((product: any, index: number) => ({
+        x: index + 1,
+        y: product.price,
+      }));
+      setScatterPlotData(formattedData);
+    };
+
+    // Fetch pie chart data (admins and users)
+    const fetchPieChartData = async () => {
+      const [subscribersResponse, adminsResponse, usersResponse] = await Promise.all([
+        fetch('/api/subs'),
+        fetch('/api/admins'),
+        fetch('/api/users'),
+      ]);
+
+      const [subscribers, admins, users] = await Promise.all([
+        subscribersResponse.json(),
+        adminsResponse.json(),
+        usersResponse.json(),
+      ]);
+
+      const pieData = [
+        { name: 'Subscribers', value: subscribers.count },
+        { name: 'Admins', value: admins.count },
+        { name: 'Users', value: users.count },
+      ];
+
+      setPieChartData(pieData);
+    };
+
+    fetchLineChartData();
+    fetchScatterPlotData();
+    fetchPieChartData();
+  }, []);
+
   return (
     <div className="flex flex-wrap gap-4 p-6">
       {/* Line Chart */}

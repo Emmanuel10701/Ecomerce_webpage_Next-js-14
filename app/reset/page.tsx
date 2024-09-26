@@ -32,7 +32,7 @@ const ResetPassword = () => {
     }
 
     try {
-      await axios.post('/api/auth/reset-password', { token, password });
+      await axios.post('/api/reset', { token, password });
       setMessage('Password has been reset successfully.');
       setTimeout(() => {
         setMessage('');

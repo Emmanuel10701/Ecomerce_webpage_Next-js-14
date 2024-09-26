@@ -23,7 +23,7 @@ const ForgotPassword = () => {
     setLoading(true);
     setMessage(''); // Clear previous messages
     try {
-      await axios.post('/api/auth/forgot-password', { email }, {
+      await axios.post('/api/forgot', { email }, {
         headers: { 'Content-Type': 'application/json' }
       });
       setMessage('Password reset email sent. Please check your inbox.');
