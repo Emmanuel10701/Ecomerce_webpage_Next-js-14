@@ -2,12 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useCart } from '../../context/page'; // Adjust to your actual path
-import { Elements, CardNumberElement, CardExpiryElement, CardCvcElement, useElements, useStripe } from '@stripe/react-stripe-js';
-import { loadStripe } from '@stripe/stripe-js';
-import { CircularProgress } from '@mui/material';
-
-// Make sure to replace this with your own Stripe public key
-const stripePromise = loadStripe('your-stripe-public-key');
+import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
+import { CircularProgress, Modal, Button } from '@mui/material';
 
 const CheckoutPage: React.FC = () => {
   const { state } = useCart();
@@ -18,17 +14,9 @@ const CheckoutPage: React.FC = () => {
     city: '',
     zip: '',
   });
-  const [paymentMethod, setPaymentMethod] = useState<'card' | 'mpesa'>('card');
-  const [mpesaDetails, setMpesaDetails] = useState({
-    phoneNumber: '',
-    amount: 0,
-  });
   const [loading, setLoading] = useState(false);
-
-  const stripe = useStripe();
-  const elements = useElements();
-
-  const total = state.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [total, setTotal] = useState(0);
 
   useEffect(() => {
     const fetchCustomerDetails = async () => {
@@ -41,7 +29,7 @@ const CheckoutPage: React.FC = () => {
           body: JSON.stringify({ userId: 'some-user-id' }) // Replace with actual userId or relevant data
         });
         const data = await response.json();
-        
+
         setBillingInfo({
           name: data.name || '',
           email: data.email || '',
@@ -50,17 +38,15 @@ const CheckoutPage: React.FC = () => {
           zip: data.zip || '',
         });
 
-        setMpesaDetails(prevState => ({
-          ...prevState,
-          amount: total,
-        }));
+        const orderTotal = state.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+        setTotal(orderTotal);
       } catch (error) {
         console.error('Error fetching customer details:', error);
       }
     };
 
     fetchCustomerDetails();
-  }, [total]);
+  }, [state.items]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -71,98 +57,29 @@ const CheckoutPage: React.FC = () => {
     });
   };
 
-  const handleMpesaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setMpesaDetails(prevState => ({ ...prevState, [name]: value }));
-  };
-
-  const handleCheckout = async (event: React.FormEvent) => {
-    event.preventDefault();
+  const handlePayPalPayment = async (details: any) => {
     setLoading(true);
+    try {
+      const response = await fetch('/api/checkoutapi', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          orderID: details.orderID,
+          billingInfo,
+        }),
+      });
 
-    if (paymentMethod === 'card') {
-      if (!stripe || !elements) {
-        console.error('Stripe.js or Elements not loaded.');
-        setLoading(false);
-        return;
-      }
-
-      const cardNumber = elements.getElement(CardNumberElement);
-      const cardExpiry = elements.getElement(CardExpiryElement);
-      const cardCvc = elements.getElement(CardCvcElement);
-
-      if (!cardNumber || !cardExpiry || !cardCvc) {
-        console.error('Card Elements are not loaded.');
-        setLoading(false);
-        return;
-      }
-
-      const { token, error } = await stripe.createToken(cardNumber); // Pass only the element
-
-      if (error) {
-        console.error('Error creating Stripe token:', error);
-        alert('Error processing payment.');
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const response = await fetch('/api/checkout', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            token: token.id,
-            amount: total,
-            billingInfo,
-          }),
-        });
-
-        const result = await response.json();
-        console.log('Card Payment Response:', result);
-
-        alert('Payment successful.');
-      } catch (error) {
-        console.error('Card payment error:', error);
-        alert('Error processing payment.');
-      } finally {
-        setLoading(false);
-      }
-    } else if (paymentMethod === 'mpesa') {
-      try {
-        const response = await fetch('/api/checkout', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            phoneNumber: mpesaDetails.phoneNumber,
-            amount: total,
-          }),
-        });
-
-        const result = await response.json();
-        console.log('M-Pesa Response:', result);
-
-        await fetch('/api/mpesa', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            status: 'paid',
-            orderId: result.orderId,
-          }),
-        });
-
-        alert('M-Pesa payment request sent.');
-      } catch (error) {
-        console.error('M-Pesa payment error:', error);
-        alert('Error sending M-Pesa payment request.');
-      } finally {
-        setLoading(false);
-      }
+      const result = await response.json();
+      console.log('PayPal Payment Response:', result);
+      alert('Payment successful. Thank you for your purchase!');
+    } catch (error) {
+      console.error('PayPal payment error:', error);
+      alert('Error processing payment.');
+    } finally {
+      setLoading(false);
+      setModalOpen(false); // Close modal after processing
     }
   };
 
@@ -196,7 +113,7 @@ const CheckoutPage: React.FC = () => {
         {/* Billing Information */}
         <div className="billing-info bg-white p-4 rounded-lg shadow-md">
           <h2 className="text-2xl font-semibold text-blue-500 mb-4">Billing Information</h2>
-          <form onSubmit={handleCheckout}>
+          <form onSubmit={e => { e.preventDefault(); setModalOpen(true); }}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <input
                 type="text"
@@ -245,81 +162,6 @@ const CheckoutPage: React.FC = () => {
               />
             </div>
 
-            {/* Payment Method Selection */}
-            <div className="payment-method mt-6">
-              <h2 className="text-lg font-semibold text-blue-600">Select Payment Method</h2>
-              <div className="flex flex-col sm:flex-row gap-4">
-                {/* Card Payment Option */}
-                <label className={`flex items-center p-4 rounded-lg border cursor-pointer transition-transform ${paymentMethod === 'card' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'} hover:scale-105`} htmlFor="card">
-                  <input
-                    type="radio"
-                    id="card"
-                    name="paymentMethod"
-                    value="card"
-                    checked={paymentMethod === 'card'}
-                    onChange={() => setPaymentMethod('card')}
-                    className="sr-only"
-                  />
-                  <div className="flex items-center gap-3">
-                    <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5.1 13.4A2.5 2.5 0 017.5 12h9a2.5 2.5 0 012.4 1.4M5.1 13.4A2.5 2.5 0 017.5 15h9a2.5 2.5 0 012.4-1.6M5.1 13.4V17a2.5 2.5 0 002.4 2.5h9a2.5 2.5 0 002.4-2.5v-3.6M5.1 13.4H3.5M5.1 13.4a2.5 2.5 0 00-2.4 2.5v1M5.1 13.4V17a2.5 2.5 0 01-2.4-2.5v-3.6M19 13.4a2.5 2.5 0 00-2.4-2.5v-3.6a2.5 2.5 0 012.4-2.5M19 13.4v-3.6a2.5 2.5 0 00-2.4-2.5M19 13.4a2.5 2.5 0 002.4 2.5v1"/>
-                    </svg>
-                    <span className="text-lg font-semibold text-slate-600">Credit/Debit Card</span>
-                  </div>
-                </label>
-
-                {/* M-Pesa Payment Option */}
-                <label className={`flex items-center p-4 rounded-lg border cursor-pointer transition-transform ${paymentMethod === 'mpesa' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'} hover:scale-105`} htmlFor="mpesa">
-                  <input
-                    type="radio"
-                    id="mpesa"
-                    name="paymentMethod"
-                    value="mpesa"
-                    checked={paymentMethod === 'mpesa'}
-                    onChange={() => setPaymentMethod('mpesa')}
-                    className="sr-only"
-                  />
-                  <div className="flex items-center gap-3">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/M-Pesa_logo.svg/1200px-M-Pesa_logo.svg.png" alt="M-Pesa" className="w-8 h-8 object-cover" />
-                    <span className="text-lg font-semibold text-slate-600">M-Pesa</span>
-                  </div>
-                </label>
-              </div>
-            </div>
-
-            {/* Card Payment Form */}
-            {paymentMethod === 'card' && (
-              <div className="card-payment mt-6 space-y-4">
-                <div className="field">
-                  <label htmlFor="cardNumber" className="block text-sm font-semibold text-slate-600">Card Number</label>
-                  <CardNumberElement className="p-3 border border-gray-300 rounded-lg shadow-sm" />
-                </div>
-                <div className="field">
-                  <label htmlFor="cardExpiry" className="block text-sm font-semibold text-slate-600">Expiration Date</label>
-                  <CardExpiryElement className="p-3 border border-gray-300 rounded-lg shadow-sm" />
-                </div>
-                <div className="field">
-                  <label htmlFor="cardCvc" className="block text-sm font-semibold text-slate-600">CVC</label>
-                  <CardCvcElement className="p-3 border border-gray-300 rounded-lg shadow-sm" />
-                </div>
-              </div>
-            )}
-
-            {/* M-Pesa Payment Form */}
-            {paymentMethod === 'mpesa' && (
-              <div className="mpesa-payment mt-6">
-                <input
-                  type="text"
-                  name="phoneNumber"
-                  value={mpesaDetails.phoneNumber}
-                  onChange={handleMpesaChange}
-                  placeholder="Phone Number"
-                  className="p-3 border border-gray-300 rounded-lg text-slate-500 shadow-sm"
-                  required
-                />
-              </div>
-            )}
-
             <button
               type="submit"
               className={`w-full mt-6 p-3 rounded-lg shadow-lg transition-colors ${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
@@ -331,26 +173,45 @@ const CheckoutPage: React.FC = () => {
                   <span className="ml-2">Processing...</span>
                 </div>
               ) : (
-                'Complete Purchase'
+                'Proceed to Payment'
               )}
             </button>
           </form>
         </div>
       </div>
-      <div className="payment-logos mt-6 flex justify-center space-x-4">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/51/Visa_Logo_2011.svg/1200px-Visa_Logo_2011.svg.png" alt="Visa" className="w-16 h-16" />
-        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a6/MasterCard_Logo_2016.svg/1200px-MasterCard_Logo_2016.svg.png" alt="MasterCard" className="w-16 h-16" />
-        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/American_Express_logo.svg/1200px-American_Express_logo.svg.png" alt="American Express" className="w-16 h-16" />
-        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/Discover_Card_Logo.svg/1200px-Discover_Card_Logo.svg.png" alt="Discover" className="w-16 h-16" />
-      </div>
+
+      {/* PayPal Payment Modal */}
+      <Modal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        aria-labelledby="payment-modal-title"
+        aria-describedby="payment-modal-description"
+      >
+        <div className="flex flex-col items-center justify-center p-4 bg-white rounded-xl mt-32 shadow-lg w-11/12 md:w-1/3 mx-auto">
+          <h2 id="payment-modal-title" className="text-xl font-bold text-indigo-600 my-16 text-center">Confirm Payment</h2>
+          <p id="payment-modal-description" className="mt-2 text-center">You are about to pay KSh {total.toFixed(2)}. Proceed?</p>
+          <PayPalScriptProvider options={{ "client-id": "your-paypal-client-id" }}>
+            <PayPalButtons
+              createOrder={(data, actions) => {
+                return actions.order.create({
+                  purchase_units: [{
+                    amount: {
+                      value: total.toFixed(2),
+                    },
+                  }],
+                });
+              }}
+              onApprove={async (data, actions) => {
+                const details = await actions.order.capture();
+                handlePayPalPayment(details);
+              }}
+            />
+          </PayPalScriptProvider>
+          <Button onClick={() => setModalOpen(false)} color="secondary" className="mt-4">Cancel</Button>
+        </div>
+      </Modal>
     </div>
   );
 };
 
-const CheckoutWrapper: React.FC = () => (
-  <Elements stripe={stripePromise}>
-    <CheckoutPage />
-  </Elements>
-);
-
-export default CheckoutWrapper;
+export default CheckoutPage;

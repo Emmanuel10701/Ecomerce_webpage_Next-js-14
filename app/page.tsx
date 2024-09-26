@@ -1,6 +1,8 @@
 "use client";
 import { useState,useEffect } from 'react';
 import Image from 'next/image';
+import CircularProgress from '@mui/material/CircularProgress';
+
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
@@ -22,6 +24,7 @@ const images: ImageData[] = [
 
 const HomePage = () => {
   const [currentIndex, setCurrentIndex] = useState<number>(0);
+  const [loading, setLoading] = useState(false);
   const [isHovered, setIsHovered] = useState<boolean>(false);
   const [email, setEmail] = useState<string>('');
 
@@ -57,6 +60,9 @@ const HomePage = () => {
     try {
       await axios.post('/api/subs', { email });
       toast.success('Subscription successful!');
+        setLoading(true);
+          setLoading(false);
+      
       setEmail(''); // Clear sfter submission
     } catch (error) {
       console.error('Subscription error:', error);
@@ -64,6 +70,13 @@ const HomePage = () => {
     }
   };
 
+
+  const handleClick = () => {
+    setLoading(true);
+    setTimeout(() => {
+      window.location.href = '/Productslistpage';
+    }, 1000); // Simulate loading delay
+  };
   return (
     <div className="flex flex-col min-h-screen mt-16">
       {/* Image Slider */}
@@ -131,13 +144,17 @@ const HomePage = () => {
             Explore a wide range of products at unbeatable prices. From the latest tech gadgets to stylish home decor, we have everything you need. Enjoy exclusive offers and discounts on your favorite items.
           </p>
           <div className="text-center mb-12">
-            <span
-              className="bg-blue-600 text-white px-8 py-4 rounded-lg text-xl font-semibold hover:bg-blue-700 transition cursor-pointer"
-              onClick={() => window.location.href = '/Productslistpage'}
-            >
-              Explore Our Products
-            </span>
-          </div>
+      {loading ? (
+        <CircularProgress />
+      ) : (
+        <span
+          className="bg-blue-600 text-white px-8 py-4 rounded-lg text-xl font-semibold hover:bg-blue-700 transition cursor-pointer"
+          onClick={handleClick}
+        >
+          Explore Our Products
+        </span>
+      )}
+    </div>
         </div>
 
         {/* Categories Section */}
@@ -287,11 +304,20 @@ const HomePage = () => {
             placeholder="Enter your email"
             className="p-4 w-full max-w-xs text-slate-600 rounded-lg border-2 border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          <span
-            className="bg-white text-blue-700 px-6 py-4 rounded-lg text-lg font-semibold hover:bg-gray-100 transition cursor-pointer"
-            onClick={handleSubscribe}
+           <span
+            className={`${
+              loading ? 'flex items-center justify-center' : ''
+            } bg-white text-blue-700 px-6 py-4 rounded-lg text-lg font-semibold hover:bg-gray-100 transition cursor-pointer`}
+            onClick={!loading ? handleSubscribe : undefined}
           >
-            Subscribe
+            {loading ? (
+              <>
+                <CircularProgress size={24} style={{ marginRight: 8 }} />
+                Subscribing...
+              </>
+            ) : (
+              'Subscribe'
+            )}
           </span>
         </div>
 

@@ -26,8 +26,8 @@ model Employee {
   id     String @id @default(auto()) @map("_id") @db.ObjectId
   name   String
   userId String @db.ObjectId
+  createdAt DateTime @default(now())
   role   Role   @default(STAFF)
-  createdAt DateTime @default(now())  // Ensure this is defined
   user   User   @relation(fields: [userId], references: [id])
 }
 
