@@ -1,59 +1,52 @@
-import { NextRequest, NextResponse } from 'next/server';
-import prisma from '../../../../libs/prismadb'; // Ensure this path is correct
+import prisma from '../../../../libs/prismadb';
+import { NextResponse } from 'next/server';
 
-// DELETE and PUT request handler for individual orders
-export async function handler(req: NextRequest) {
-  const { id } = req.query;
+export async function GET(req: Request) {
+    const { searchParams } = new URL(req.url);
+    const orderId = searchParams.get('id'); // Get order ID from query params
 
-  // DELETE request to remove an order by ID
-  if (req.method === 'DELETE') {
     try {
-      if (!id) {
-        return new NextResponse(JSON.stringify({ error: 'Order ID is required' }), { status: 400 });
-      }
+        // Fetch order by ID
+        const order = await prisma.order.findUnique({
+            where: { id: orderId || undefined },
+            include: { orderItems: true, customer: true }, // Include related data
+        });
 
-      const deletedOrder = await prisma.order.delete({
-        where: { id },
-      });
+        if (!order) {
+            return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+        }
 
-      return NextResponse.json(deletedOrder, { status: 200 });
-    } catch (error:any) {
-      if (error.code === 'P2025') {
-        return new NextResponse(JSON.stringify({ error: 'Order not found' }), { status: 404 });
-      }
-      console.error('Error deleting order:', error);
-      return new NextResponse(JSON.stringify({ error: 'Error deleting order' }), { status: 500 });
+        return NextResponse.json(order);
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
     }
-  }
+}
 
-  // PUT request to update an order by ID
-  if (req.method === 'PUT') {
+export async function DELETE(req: Request) {
+    const { searchParams } = new URL(req.url);
+    const orderId = searchParams.get('id'); // Get order ID from query params
+
+    if (!orderId) {
+        return NextResponse.json({ error: 'Order ID is required' }, { status: 400 });
+    }
+
     try {
-      const body = await req.json();
-      const { name, email, address, city, zip, items, total, paymentMethod, status } = body;
+        // Check if the order exists before deleting
+        const existingOrder = await prisma.order.findUnique({
+            where: { id: orderId },
+        });
 
-      const updatedOrder = await prisma.order.update({
-        where: { id },
-        data: {
-          name,
-          email,
-          address,
-          city,
-          zip,
-          items,
-          total,
-          paymentMethod,
-          status,
-        },
-      });
+        if (!existingOrder) {
+            return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+        }
 
-      return NextResponse.json(updatedOrder, { status: 200 });
-    } catch (error:any) {
-      console.error('Error updating order:', error);
-      return new NextResponse(JSON.stringify({ error: `Error updating order: ${error.message}` }), { status: 500 });
+        // Delete the order
+        await prisma.order.delete({
+            where: { id: orderId },
+        });
+
+        return NextResponse.json({ message: 'Order deleted successfully' }, { status: 200 });
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
     }
-  }
-
-  // Method not allowed
-  return new NextResponse(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });
 }

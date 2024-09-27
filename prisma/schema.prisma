@@ -7,12 +7,14 @@ datasource db {
   url      = env("DATABASE_URI")
 }
 
+// Enum to define user roles
 enum Role {
   USER
   STAFF
   ADMIN
 }
 
+// Admin model for managing admin users
 model Admin {
   id     String @id @default(auto()) @map("_id") @db.ObjectId
   name   String
@@ -21,7 +23,7 @@ model Admin {
   user   User   @relation(fields: [userId], references: [id])
 }
 
-
+// Employee model for managing staff users
 model Employee {
   id     String @id @default(auto()) @map("_id") @db.ObjectId
   name   String
@@ -30,6 +32,7 @@ model Employee {
   user   User   @relation(fields: [userId], references: [id])
 }
 
+// User model for managing application users
 model User {
   id             String          @id @default(auto()) @map("_id") @db.ObjectId
   name           String?
@@ -42,12 +45,13 @@ model User {
   accounts       Account[]
   role           Role            @default(STAFF)
   employees      Employee[]
-  admin      Admin[]
-   sessions             Session[]               // Relation to NextAuth Sessions
-  verificationTokens    VerificationToken[]    // Relation for password reset tokens
-  passwordReset    passwordReset[] 
+  admin          Admin[]         // Updated to be an array of Admins
+  sessions       Session[]       // Relation to NextAuth Sessions
+  verificationTokens VerificationToken[] // Relation for password reset tokens
+  passwordReset  passwordReset[]
 }
 
+// Session model for managing user sessions
 model Session {
   id                   String   @id @default(auto()) @map("_id") @db.ObjectId
   sessionToken         String   @unique
@@ -56,17 +60,14 @@ model Session {
   user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-
-
-
+// Subscription model for managing user subscriptions
 model Subscription {
   id                   String   @id @default(auto()) @map("_id") @db.ObjectId
   email                String   @unique
   createdAt            DateTime @default(now())
-  
 }
 
-
+// Account model for managing user accounts
 model Account {
   id                   String   @id @default(auto()) @map("_id") @db.ObjectId
   userId               String   @db.ObjectId
@@ -85,6 +86,7 @@ model Account {
   @@unique([provider, providerAccountId])
 }
 
+// PasswordReset model for managing password reset tokens
 model passwordReset {
   id                   String   @id @default(auto()) @map("_id") @db.ObjectId
   userId               String   @db.ObjectId
@@ -95,6 +97,7 @@ model passwordReset {
   user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+// Product model for managing products
 model Product {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   name        String
@@ -108,6 +111,7 @@ model Product {
   category    String?
 }
 
+// Customer model for managing customer information
 model Customer {
   id          String  @id @default(auto()) @map("_id") @db.ObjectId
   name        String
@@ -119,6 +123,7 @@ model Customer {
   orders      Order[] // A customer can have multiple orders
 }
 
+// Order model for managing customer orders
 model Order {
   id            String      @id @default(auto()) @map("_id") @db.ObjectId
   name          String      // Customer name
@@ -136,7 +141,7 @@ model Order {
   createdAt     DateTime    @default(now())
 }
 
-
+// VerificationToken model for managing email verification tokens
 model VerificationToken {
   id                   String   @id @default(auto()) @map("_id") @db.ObjectId
   identifier           String
@@ -147,6 +152,8 @@ model VerificationToken {
 
   @@unique([identifier, token])
 }
+
+// OrderItem model for managing items within an order
 model OrderItem {
   id        String @id @default(auto()) @map("_id") @db.ObjectId
   orderId   String @db.ObjectId
@@ -156,16 +163,19 @@ model OrderItem {
   order     Order  @relation(fields: [orderId], references: [id])
 }
 
+// Enum to define various order statuses
 enum OrderStatus {
   DELIVERED
   PENDING
   PAID
 }
+
+// Event model for managing events
 model Event {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  title      String   // Title of the event
-  date       DateTime // Date of the event
-  color      String   // Color associated with the event
-  createdAt  DateTime @default(now()) // Timestamp for when the event was created
-  updatedAt  DateTime @updatedAt         // Timestamp for when the event was last updated
+  title       String   // Title of the event
+  date        DateTime // Date of the event
+  color       String   // Color associated with the event
+  createdAt   DateTime @default(now()) // Timestamp for when the event was created
+  updatedAt   DateTime @updatedAt         // Timestamp for when the event was last updated
 }

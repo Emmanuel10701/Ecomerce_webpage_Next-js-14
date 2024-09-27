@@ -4,27 +4,33 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import GithubProvider from "next-auth/providers/github";
 import bcrypt from 'bcrypt';
-import prisma from '../../../../libs/prismadb'; // Adjust the path to your Prisma client
+import prisma from '../../../../libs/prismadb'; // Adjust path to your Prisma client
 
-// Extend NextAuth types to include the role
+// Extend NextAuth types to include the role and accessToken
 declare module 'next-auth' {
+  interface User {
+    role?: string | null; // Extend User type
+  }
+
   interface Session {
     user: {
       name?: string | null;
       email?: string | null;
       image?: string | null;
-      role?: string | null; // Add role here
+      role?: string | null; // Include role in session
     };
+    accessToken?: string; // Include access token in session
   }
 }
 
 declare module 'next-auth/jwt' {
   interface JWT {
-    role?: string | null; // Add role here if you use JWT for role storage
+    role?: string | null; // Role included in JWT
+    accessToken?: string; // Access token included in JWT
   }
 }
 
-const authOptions: NextAuthOptions = {
+export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   providers: [
     GoogleProvider({
@@ -46,93 +52,62 @@ const authOptions: NextAuthOptions = {
           throw new Error('Please enter an email and password');
         }
 
-        try {
-          const user = await prisma.user.findUnique({
-            where: { email: credentials.email },
-          });
+        // Find the user in the database
+        const user = await prisma.user.findUnique({
+          where: { email: credentials.email },
+        });
 
-          if (!user || !user.hashedPassword) {
-            throw new Error('No user found or incorrect password');
-          }
-
-          const isPasswordValid = await bcrypt.compare(credentials.password, user.hashedPassword);
-
-          if (!isPasswordValid) {
-            throw new Error('Incorrect password');
-          }
-
-          return user;
-        } catch (error) {
-          console.error('Authorization error:', error);
-          throw new Error('An error occurred during authorization');
+        if (!user || !user.hashedPassword) {
+          throw new Error('No user found or incorrect password');
         }
+
+        // Validate password
+        const isPasswordValid = await bcrypt.compare(credentials.password, user.hashedPassword);
+
+        if (!isPasswordValid) {
+          throw new Error('Incorrect password');
+        }
+
+        return user; // Returning the user if valid
       },
     }),
   ],
-  pages: {
-    signIn: '/auth/signIn',
-    error: '/auth/signIn', // Redirect to sign-in page on error
-  },
   secret: process.env.JWT_SECRET!,
   session: {
-    strategy: "jwt",
-    maxAge: 60 * 60, // Session will expire in 60 minutes
+    strategy: "jwt", // Using JWT-based sessions
+    maxAge: 60 * 60,  // Session expires in 1 hour
   },
   callbacks: {
-    async signIn({ user, account }) {
-      if (account?.provider === 'google' || account?.provider === 'github') {
-        if (!user.email) {
-          throw new Error('Email is required for sign-in');
-        }
-
-        try {
-          const existingUser = await prisma.user.findUnique({
-            where: { email: user.email },
-          });
-
-          if (!existingUser) {
-            await prisma.user.create({
-              data: {
-                name: user.name || '',
-                email: user.email,
-                hashedPassword: '', // No password for OAuth users
-                role: 'STAFF', // Set default role for new users
-              },
-            });
-          }
-        } catch (error) {
-          console.error('Error during OAuth user creation:', error);
-          throw new Error('An error occurred while processing sign-in');
-        }
+    // JWT callback for token persistence
+    async jwt({ token, user, account }) {
+      if (account) {
+        token.accessToken = account.access_token;
       }
-      return true;
+
+      if (user) {
+        token.role = user.role; // Assign role to JWT token
+      }
+
+      return token;
     },
-    async session({ session, token }) {
-      if (session.user?.email) {
-        try {
-          const user = await prisma.user.findUnique({
-            where: { email: session.user.email },
-            select: { role: true }, // Ensure role is selected
-          });
 
-          if (user) {
-            session.user.role = user.role; // Add role to the session
-          }
-        } catch (error) {
-          console.error('Error fetching user role:', error);
-        }
-      }
+    // Session callback to add accessToken and role to session
+    async session({ session, token }) {
+      session.accessToken = token.accessToken; // Add access token to session
+      session.user.role = token.role; // Pass the role from JWT to session
       return session;
     },
     async redirect({ url, baseUrl }) {
-      if (url === baseUrl || url === `${baseUrl}/auth/signin`) {
-        return '/analytics';
-      }
-      return url;
+      return url.startsWith(baseUrl) ? url : baseUrl; // Redirect to base URL or specified URL
     },
+  },
+  pages: {
+    signIn: '/login', // Customize the sign-in page path
+    error: '/auth/error', // Error page
   },
   debug: process.env.NODE_ENV === "development",
 };
 
+// Exporting the handler for API routes
 const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST };
