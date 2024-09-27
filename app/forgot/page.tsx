@@ -2,12 +2,13 @@
 import { useState } from 'react';
 import axios from 'axios';
 import Link from 'next/link';
-import { FaCheckCircle } from 'react-icons/fa'; // Import the React icon
+import { FaCheckCircle, FaTimesCircle } from 'react-icons/fa'; // Import success and error icons
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isError, setIsError] = useState(false); // State for error handling
 
   const isValidEmail = (email: string) => {
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -18,19 +19,23 @@ const ForgotPassword = () => {
     e.preventDefault();
     if (!isValidEmail(email)) {
       setMessage('Please enter a valid email address.');
+      setIsError(true); // Set error state
       return;
     }
     setLoading(true);
     setMessage(''); // Clear previous messages
+    setIsError(false); // Reset error state
     try {
       await axios.post('/api/forgot', { email }, {
         headers: { 'Content-Type': 'application/json' }
       });
       setMessage('Password reset email sent. Please check your inbox.');
+      setIsError(false); // Set success state
       setTimeout(() => setMessage(''), 4000); // Clear message after 4 seconds
     } catch (error) {
       console.error('Error sending password reset email:', error);
       setMessage('Error sending password reset email.');
+      setIsError(true); // Set error state
     } finally {
       setLoading(false);
     }
@@ -70,8 +75,13 @@ const ForgotPassword = () => {
             ) : 'Send Reset Link'}
           </button>
           {message && (
-            <p className="mt-4 text-center text-green-600 flex items-center justify-center">
-              <FaCheckCircle className="mr-2 w-10 h-10" /> {message}
+            <p className={`mt-4 text-center flex items-center justify-center ${isError ? 'text-red-600' : 'text-green-600'}`}>
+              {isError ? (
+                <FaTimesCircle className="mr-2 w-6 h-6" /> // Error icon
+              ) : (
+                <FaCheckCircle className="mr-2 w-6 h-6" /> // Success icon
+              )}
+              {message}
             </p>
           )}
         </form>
