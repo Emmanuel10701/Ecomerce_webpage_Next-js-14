@@ -36,6 +36,10 @@ const UsersPage: React.FC = () => {
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
   const [emailSubject, setEmailSubject] = useState('');
   const [emailBody, setEmailBody] = useState('');
+  const [subject, setSubject] = useState('');
+  const [message, setMessage] = useState('');
+  const [emails, setEmails] = useState(['']);
+  const [responseMessage, setResponseMessage] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [isAccessDeniedModalOpen, setIsAccessDeniedModalOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -106,15 +110,18 @@ const UsersPage: React.FC = () => {
       await axios.post('/api/mailing', {
         emails: filteredUsers.map(user => user.email).join(','),
         subject: emailSubject,
-        body: emailBody,
+        message: emailBody,
       });
       toast.success('Email sent successfully!');
       setIsEmailModalOpen(false);
       setEmailSubject('');
+      console.log(emails)
       setEmailBody('');
     } catch (error) {
       console.error(error);
       toast.error('Failed to send email.');
+      console.log(emails)
+
     }
   };
 

@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { useSession } from 'next-auth/react';
 import LoadingSpinner from '@/components/spinner/page'; 
 import Sidebar from '@/components/sidebar/page'; // Import Sidebar
 import moment from 'moment';
@@ -20,6 +21,7 @@ interface Order {
   amount: number;
   datePlaced: string; // Assuming date is in ISO format
 }
+const router = useRouter();
 
 const PAGE_SIZE = 10; // Number of items per page
 
@@ -27,7 +29,9 @@ const OrdersPage: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [totalOrders, setTotalOrders] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState<number>(1);
+  const { data: session, status } = useSession();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(false); // Add loading state
   const [dropdownOpen, setDropdownOpen] = useState(false); // State for dropdown menu
@@ -150,8 +154,31 @@ const OrdersPage: React.FC = () => {
       setLoading(false); // Reset loading after refreshing
     }, 1000);
   };
+  const handleLogin = () => {
+    router.push("/login");
+  };
+
+
+  if (!session) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-100">
+        <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-sm text-center">
+          <h2 className="text-2xl font-bold mb-4">Please Log In</h2>
+          <p className="mb-6">You need to log in or register to access this page.</p>
+          <button 
+            onClick={handleLogin} 
+            className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition duration-300"
+            disabled={isProcessing} // Disable button while processing
+          >
+            {isProcessing ? 'Processing...' : 'Go to Login Page'}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
+
     <>
       <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} className='md:hidden' />
       <div className={`flex transition-all ${isSidebarOpen ? 'ml-[25%]' : 'ml-0'}`}>

@@ -5,31 +5,36 @@ import nodemailer from 'nodemailer';
 export async function POST(request: Request) {
   try {
     // Parse the request body
-    const { subject, message, recipients } = await request.json();
+    const { subject, message, emails } = await request.json();
 
     // Validate input
-    if (!subject || !message || !recipients || !Array.isArray(recipients)) {
-      return NextResponse.json({ error: 'Subject, message, and recipients are required.' }, { status: 400 });
+    if (!subject || !message || !emails || !Array.isArray(emails) || emails.length === 0) {
+      return NextResponse.json({ error: 'Invalid input. Subject, message, and emails are required.' }, { status: 400 });
+    }
+
+    // Check if environment variables are set
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      return NextResponse.json({ error: 'Email credentials are missing.' }, { status: 500 });
     }
 
     // Create a transporter object using SMTP transport
     const transporter = nodemailer.createTransport({
-      service: 'gmail', // Replace with your email service
+      service: process.env.EMAIL_SERVICE || 'gmail', // Default to Gmail but allows customization
       auth: {
-        user: process.env.EMAIL_USER, // Your email address
-        pass: process.env.EMAIL_PASS, // Your email password
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
       },
     });
 
-    // Iterate over the recipients and send an email to each
-    for (const recipient of recipients) {
+    // Helper function to send emails
+    const sendEmail = async (recipientEmail: string) => {
       const mailOptions = {
-        from: process.env.EMAIL_USER, // Sender address
-        to: recipient.email, // Receiver address from recipients array
-        subject: subject, // Subject from request body
+        from: process.env.EMAIL_USER,
+        to: recipientEmail,
+        subject: subject,
         html: `
-          <div style="font-family: 'Arial', sans-serif; background-color: #f9f9f9; padding: 20px;">
-            <div style="max-width: 600px; margin: auto; background-color: #fff; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); overflow: hidden;">
+          <div style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 20px;">
+            <div style="max-width: 600px; margin: auto; background-color: #fff; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
               <div style="background-color: #4caf50; padding: 20px; text-align: center; color: white;">
                 <h1 style="margin: 0; font-size: 24px;">${subject}</h1>
               </div>
@@ -46,14 +51,16 @@ export async function POST(request: Request) {
         `,
       };
 
-      // Send email to each recipient
-      await transporter.sendMail(mailOptions);
-    }
+      return transporter.sendMail(mailOptions);
+    };
+
+    // Send emails concurrently using Promise.all
+    await Promise.all(emails.map((recipient: { email: string }) => sendEmail(recipient.email)));
 
     return NextResponse.json({ message: 'Emails sent successfully!' }, { status: 200 });
 
-  } catch (error) {
-    console.error('Error sending emails:', error);
-    return NextResponse.json({ error: 'Error sending emails.' }, { status: 500 });
+  } catch (error:any) {
+    console.error('Error sending emails:', error.message || error);
+    return NextResponse.json({ error: 'Failed to send emails.' }, { status: 500 });
   }
 }
