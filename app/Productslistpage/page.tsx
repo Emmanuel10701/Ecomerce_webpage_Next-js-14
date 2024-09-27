@@ -110,6 +110,16 @@ const HomePage: React.FC = () => {
     return result;
   });
 
+
+  const handleCategoryClick = (category: string | null) => {
+    setSelectedCategory(category);
+    // Auto-scroll to the bottom of the page
+    window.scrollTo({
+      top: document.documentElement.scrollHeight,
+      behavior: 'smooth',
+    });
+  };
+
   const indexOfLastProduct = currentPage * itemsPerPage;
   const indexOfFirstProduct = indexOfLastProduct - itemsPerPage;
   const currentProducts = filteredProducts.slice(indexOfFirstProduct, indexOfLastProduct);
@@ -147,30 +157,34 @@ const HomePage: React.FC = () => {
       <div className="md:flex md:flex-row items-start">
         {/* Category List */}
         <div className="flex-none relative md:w-[22%] lg:w-2/5 bg-white p-4">
-          <section className="py-6">
-            <h2 className="text-xl font-bold mb-6 mt-2 text-slate-500">Categories</h2>
-            <div className="flex flex-col space-y-4">
-              {categories.map((category) => (
-                <button
-                  key={category}
-                  onClick={() => setSelectedCategory(category)}
-                  className={`text-md font-semibold block w-3/4 text-center p-2 rounded-full ${
-                    selectedCategory === category ? 'bg-blue-500 text-white' : 'bg-gray-200 text-slate-500'
-                  }`}
-                >
-                  {category}
-                </button>
-              ))}
-              <button
-                onClick={() => setSelectedCategory(null)}
-                className={`text-md font-semibold block w-3/4 text-center p-2 rounded-full ${
-                  selectedCategory === null ? 'bg-blue-500 text-white' : 'bg-gray-200 text-slate-500'
-                }`}
-              >
-                All Categories
-              </button>
-            </div>
-          </section>
+        <section className="py-6">
+      <h2 className="text-xl font-bold mb-6 mt-2 text-slate-500">Categories</h2>
+      <div className="flex flex-col space-y-4">
+        {categories.map((category) => (
+          <button
+            key={category}
+            onClick={() => handleCategoryClick(category)}
+            className={`text-md font-semibold block w-full max-w-md mx-auto text-center p-3 rounded-full transition duration-300 ease-in-out ${
+              selectedCategory === category
+                ? 'bg-blue-600 text-white shadow-lg'
+                : 'bg-gray-200 text-slate-500 hover:bg-gray-300'
+            }`}
+          >
+            {category}
+          </button>
+        ))}
+        <button
+          onClick={() => handleCategoryClick(null)}
+          className={`text-md font-semibold block w-full max-w-md mx-auto text-center p-3 rounded-full transition duration-300 ease-in-out ${
+            selectedCategory === null
+              ? 'bg-blue-600 text-white shadow-lg'
+              : 'bg-gray-200 text-slate-500 hover:bg-gray-300'
+          }`}
+        >
+          All Categories
+        </button>
+      </div>
+    </section>
         </div>
 
         {/* Carousel */}

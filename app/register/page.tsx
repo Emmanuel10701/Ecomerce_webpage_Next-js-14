@@ -6,6 +6,7 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import axios from 'axios';
 import { BiSolidShow, BiSolidHide } from 'react-icons/bi';
+import { CircularProgress } from '@mui/material'; // Import CircularProgress
 
 interface FormData {
   name: string;
@@ -121,10 +122,10 @@ const Register = () => {
               : isValid
               ? 'bg-blue-600 text-white hover:bg-blue-700'
               : 'bg-slate-600 text-white opacity-60 cursor-not-allowed'
-          }`}
+          } flex items-center justify-center`}
           disabled={isSubmitting || !isValid}
         >
-          {isSubmitting ? 'Registering...' : 'Register'}
+          {isSubmitting ? <CircularProgress size={24} color="inherit" /> : 'Register'}
         </button>
 
         <p className="text-gray-600 text-sm mt-4 text-center">

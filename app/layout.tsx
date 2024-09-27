@@ -34,10 +34,12 @@ export default function RootLayout({
   const castomers = pathname.startsWith('/castomers'); // Add this line
   const cartpage = pathname.startsWith('/checkout'); // Add this line
   const checkout = pathname.startsWith('/Cartpage'); // Add this line
+  const reset = pathname.startsWith('/forgot'); // Add this line
+  const forget = pathname.startsWith('/reset'); // Add this line
   const createproduct = pathname.startsWith('/createproduct'); // Add this line
   const orders = pathname.startsWith('/Orders'); // Add this line
   const allProducts = pathname.startsWith('/Productslistpage'); // Add this line
-  const isExcludedPage = isAnalyticsPage ||isNotfound||castomers||cartpage||checkout||allProducts||orders||createproduct||listpage||employees||settings||subscribers|| isUserPage ||isRegister|| isWorkersPage||isLogin ||isCalender|| pathname.startsWith('/maindata');
+  const isExcludedPage = isAnalyticsPage||reset||forget ||isNotfound||castomers||cartpage||checkout||allProducts||orders||createproduct||listpage||employees||settings||subscribers|| isUserPage ||isRegister|| isWorkersPage||isLogin ||isCalender|| pathname.startsWith('/maindata');
 
   return (
     <html lang="en">

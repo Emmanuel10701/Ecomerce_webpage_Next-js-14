@@ -247,7 +247,7 @@ const UserManagement: React.FC = () => {
                     <div className="lg:w-1/3">
                         <div className="mb-4">
                             <select
-                                className="m rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 text-black-700"
+                                className="m rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 text-slate-600 font-bold "
                                 value={actionType}
                                 onChange={(e) => setActionType(e.target.value as 'addAdmin' | 'addEmployee' | 'removeAdmin' | 'removeEmployee')}
                             >
@@ -271,7 +271,7 @@ const UserManagement: React.FC = () => {
                                 Select User
                             </h3>
                             <select
-                                className=" border border-gray-300 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 text-black-700"
+                                className=" border border-gray-300 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 text-slate-600 font-bold "
                                 value={selectedUser ? selectedUser.id : ''}
                                 onChange={(e) => {
                                     const user = users.find(user => user.id === e.target.value);
@@ -344,13 +344,13 @@ const UserManagement: React.FC = () => {
             <Dialog open={showActionModal} onClose={closeActionModal}>
                 <DialogTitle>{actionType.includes('add') ? 'Add User' : 'Remove User'}</DialogTitle>
                 <DialogContent>
-                    <p>Are you sure you want to {actionType.replace(/([A-Z])/g, ' $1').toLowerCase()} {selectedUser?.name}?</p>
+                    <p className="text-slate-600 text-center font-semibold">Are you sure you want to {actionType.replace(/([A-Z])/g, ' $1').toLowerCase()} {selectedUser?.name}?</p>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={closeActionModal} color="primary">
+                    <Button onClick={closeActionModal} color="primary" className="bg-blue-600 rounded-lg">
                         Cancel
                     </Button>
-                    <Button onClick={handleAction} color="secondary">
+                    <Button onClick={handleAction} color="secondary" className=" bg-blue-600 rounded-lg">
                         Confirm
                     </Button>
                 </DialogActions>

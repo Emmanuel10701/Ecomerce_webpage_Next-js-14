@@ -106,7 +106,7 @@ const ListProducts: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   const pageSize = 10;
-  const DEFAULT_IMAGE = '/path/to/default-image.jpg'; // Replace with the path to your default image
+  const DEFAULT_IMAGE = '/images/default.avif'; 
 
   const route = useRouter();
   const handleLogin = () => {
