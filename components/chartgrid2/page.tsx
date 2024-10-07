@@ -35,58 +35,41 @@ const ChartGridComponent: React.FC = () => {
   const [pieChartData, setPieChartData] = useState<PieChartData[]>([]);
 
   useEffect(() => {
-    // Fetch line chart data (assuming API endpoints are correct)
-    const fetchLineChartData = async () => {
-      const response = await fetch('/api/subscribers');
-      const data = await response.json();
-      setLineChartData(data);
-    };
+    // Dummy data for line chart
+    const dummyLineChartData: LineChartData[] = [
+      { name: 'Jan', value: 400 },
+      { name: 'Feb', value: 300 },
+      { name: 'Mar', value: 500 },
+      { name: 'Apr', value: 400 },
+      { name: 'May', value: 600 },
+    ];
+    setLineChartData(dummyLineChartData);
 
-    // Fetch scatter plot data (count of products and their prices)
-    const fetchScatterPlotData = async () => {
-      const response = await fetch('/actions/products');
-      const data = await response.json();
-      const formattedData = data.map((product: any, index: number) => ({
-        x: index + 1,
-        y: product.price,
-      }));
-      setScatterPlotData(formattedData);
-    };
+    // Dummy data for scatter plot
+    const dummyScatterPlotData: ScatterPlotData[] = [
+      { x: 1, y: 20 },
+      { x: 2, y: 30 },
+      { x: 3, y: 25 },
+      { x: 4, y: 35 },
+      { x: 5, y: 50 },
+    ];
+    setScatterPlotData(dummyScatterPlotData);
 
-    // Fetch pie chart data (admins and users)
-    const fetchPieChartData = async () => {
-      const [subscribersResponse, adminsResponse, usersResponse] = await Promise.all([
-        fetch('/api/subs'),
-        fetch('/api/admins'),
-        fetch('/api/users'),
-      ]);
-
-      const [subscribers, admins, users] = await Promise.all([
-        subscribersResponse.json(),
-        adminsResponse.json(),
-        usersResponse.json(),
-      ]);
-
-      const pieData = [
-        { name: 'Subscribers', value: subscribers.count },
-        { name: 'Admins', value: admins.count },
-        { name: 'Users', value: users.count },
-      ];
-
-      setPieChartData(pieData);
-    };
-
-    fetchLineChartData();
-    fetchScatterPlotData();
-    fetchPieChartData();
+    // Dummy data for pie chart
+    const dummyPieChartData: PieChartData[] = [
+      { name: 'Subscribers', value: 400 },
+      { name: 'Admins', value: 100 },
+      { name: 'Users', value: 300 },
+    ];
+    setPieChartData(dummyPieChartData);
   }, []);
 
   return (
-    <div className="flex flex-wrap gap-4 p-6">
+    <div className="flex flex-wrap justify-between gap-4 p-6">
       {/* Line Chart */}
-      <div className="flex-1 min-w-[150px] max-w-[250px] p-4 border rounded-lg bg-gray-50">
+      <div className="flex-1 min-w-[150px] max-w-[250px] w-full p-4 border rounded-lg bg-gray-50">
         <h2 className="text-sm font-semibold mb-2 text-center">Line Chart</h2>
-        <LineChart width={160} height={100} data={lineChartData}>
+        <LineChart width={250} height={150} data={lineChartData}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="name" />
           <YAxis />
@@ -96,9 +79,9 @@ const ChartGridComponent: React.FC = () => {
       </div>
 
       {/* Scatter Plot */}
-      <div className="flex-1 min-w-[150px] max-w-[250px] p-4 border rounded-lg bg-gray-50">
+      <div className="flex-1 min-w-[150px] max-w-[250px] w-full p-4 border rounded-lg bg-gray-50">
         <h2 className="text-sm font-semibold mb-2 text-center">Scatter Plot</h2>
-        <ScatterChart width={160} height={100}>
+        <ScatterChart width={250} height={150}>
           <ScatterXAxis dataKey="x" />
           <ScatterYAxis dataKey="y" />
           <Scatter data={scatterPlotData} fill="#8884d8" />
@@ -107,9 +90,9 @@ const ChartGridComponent: React.FC = () => {
       </div>
 
       {/* Pie Chart */}
-      <div className="flex-1 min-w-[150px] max-w-[250px] p-4 border rounded-lg bg-gray-50">
+      <div className="flex-1 min-w-[150px] max-w-[250px] w-full p-4 border rounded-lg bg-gray-50">
         <h2 className="text-sm font-semibold mb-2 text-center">Pie Chart</h2>
-        <PieChart width={160} height={120}>
+        <PieChart width={250} height={150}>
           <Pie data={pieChartData} dataKey="value" outerRadius={50}>
             {pieChartData.map((entry, index) => (
               <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />

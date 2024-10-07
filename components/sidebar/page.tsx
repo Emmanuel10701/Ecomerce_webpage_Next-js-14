@@ -30,7 +30,7 @@ const NAV_ITEMS: NavItem[] = [
   { path: '/castomers', label: 'Customers', icon: <FaUsers className="text-green-900" /> },
   { path: '/productstable', label: 'Products', icon: <FaBox className="text-green-500" /> },
   { path: '/users', label: 'Users', icon: <FaUsers className="text-green-900" /> },
-  { path: '/calendar', label: 'Calendar', icon: <FaCalendarAlt className="text-purple-500" /> },
+  { path: '/calender', label: 'Calendar', icon: <FaCalendarAlt className="text-purple-500" /> },
   { path: '/settingPage', label: 'Settings', icon: <FaCog className="text-gray-500" /> },
 ];
 

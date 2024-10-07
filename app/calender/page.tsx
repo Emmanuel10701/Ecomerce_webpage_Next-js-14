@@ -219,7 +219,7 @@ const CalendarPage: React.FC = () => {
 
   return (
     <div className="flex h-screen overflow-hidden">
-      <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
+      <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} className='md:hidded' />
 
       <main className={`flex-1 p-4 ${isSidebarOpen ? 'ml-[24%] w-[75%]' : 'ml-0 w-full'} bg-blue-400`}>
         <div className="mb-4 flex justify-between items-center">

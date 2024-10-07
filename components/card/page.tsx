@@ -67,6 +67,8 @@ const Card: React.FC<CardProps> = ({
 
   return (
     <div 
+    onClick={handleCardClick} // Navigate on image click
+
       className="relative border p-2 rounded-lg overflow-hidden shadow-md w-[100%] bg-white hover:shadow-lg transition-shadow duration-300 ease-in-out cursor-pointer"
     >
       <div>
@@ -77,7 +79,6 @@ const Card: React.FC<CardProps> = ({
           height={150} 
           className="w-full h-32 object-cover" 
           onError={(e) => (e.currentTarget.src = 'https://via.placeholder.com/150')} 
-          onClick={handleCardClick} // Navigate on image click
         />
         {oldPrice && (
           <div className="absolute top-2 right-2 bg-purple-600 text-white text-xs px-2 py-1 rounded-xl">

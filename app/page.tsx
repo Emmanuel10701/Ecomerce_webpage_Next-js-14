@@ -16,9 +16,9 @@ interface ImageData {
 
 // Image data array with text
 const images: ImageData[] = [
-  { src: '/assets/c1.jpg', text: "Black Friday Deals" },
-  { src: '/assets/ecommerce.jpg', text: "E-commerce Deals" },
-  { src: '/assets/c2.jpg', text: "Modern Products" },
+  { src: '/assets/c4.webp', text: "Black Friday Deals" },
+  { src: '/assets/ecomerce.jpg', text: "E-commerce Deals" },
+  { src: '/assets/dania.jpg', text: "Modern Products" },
   { src: '/assets/c3.jpg', text: "Get 80% Offer" },
 ];
 
@@ -78,10 +78,10 @@ const HomePage = () => {
     }, 1000); // Simulate loading delay
   };
   return (
-    <div className="flex flex-col min-h-screen mt-16">
+    <div className="md:flex flex-col min-h-screen mt-24">
       {/* Image Slider */}
-      <div className='flex items-center gap-1'>
-        <div className='w-1/3 flex-1'>
+      <div className='md:flex items-center flex-col-reverse gap-1'>
+        <div className='md:w-1/3 w-full flex-1'>
           <section className="py-6 bg-white">
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
               <h2 className="text-3xl font-bold mb-6 text-center text-slate-500">Categories</h2>
@@ -94,7 +94,7 @@ const HomePage = () => {
             </div>
           </section>
         </div>
-        <div className="relative w-2/3 h-[60vh] md:h-[53vh] lg:h-[56vh] mb-10 -mr-1/3">
+        <div className="relative w-full md:w-4/5 h-[60vh] md:h-[53vh] lg:h-[56vh] mb-10 -mr-1/3">
           <div
             className="relative w-full h-full group"
             onMouseOver={() => setIsHovered(true)}
@@ -135,7 +135,7 @@ const HomePage = () => {
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 py-12 bg-white">
+      <main className=" py-12 bg-white">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-bold mb-6 text-center text-slate-500">
             Discover the Best Deals
@@ -246,7 +246,7 @@ const HomePage = () => {
           </div>
 
 
-          <div className="max-w-6xl  flex-1 mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-6xl mb-3  flex-1 mx-auto px-4 sm:px-6 lg:px-8">
             <h2 className="text-3xl font-bold mb-6 text-center text-slate-500">FAQ</h2>
             <div className="collapse collapse-plus border border-gray-200 rounded-lg mb-4">
               <input type="checkbox" id="faq1" className="peer hidden" />
@@ -288,21 +288,21 @@ const HomePage = () => {
         </section>
 
         {/* Subscription Form */}
-        <section className="py-12 bg-blue-700 text-slate-50">
+        <section className="py-12 bg-blue-700 flex text-slate-50">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 className="text-4xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-blue-500">
               Stay Updated with Our Newsletter
             </h2>
-            <p className="text-lg text-slate-500 mb-6 opacity-80">
+            <p className="text-lg text-slate-100 mb-6 opacity-80">
               Subscribe to our newsletter to receive the latest updates, exclusive offers, and more. Don't miss out on our exciting promotions!
             </p>
-            <div className="flex flex-col sm:flex-row justify-center items-center space-y-4 sm:space-y-0 sm:space-x-4">
+         <div className="flex  gap-2 sm:flex-row justify-center items-center space-y-4 sm:space-y-0 sm:space-x-4">
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Enter your email"
-            className="p-4 w-full max-w-xs text-slate-600 rounded-lg border-2 border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="p-4 w-2/3 ml-2 max-w-xs text-slate-600 rounded-lg border-2 border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
            <span
             className={`${

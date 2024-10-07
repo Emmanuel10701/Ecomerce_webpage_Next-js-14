@@ -1,8 +1,7 @@
-"use client";
+'use client';
 
 import React, { useState, useEffect } from 'react';
 import { useCart } from '../../context/page'; // Adjust to your actual path
-import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
 import { CircularProgress, Modal, Button } from '@mui/material';
 
 const CheckoutPage: React.FC = () => {
@@ -37,15 +36,20 @@ const CheckoutPage: React.FC = () => {
           city: data.city || '',
           zip: data.zip || '',
         });
-
-        const orderTotal = state.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-        setTotal(orderTotal);
       } catch (error) {
         console.error('Error fetching customer details:', error);
       }
     };
 
     fetchCustomerDetails();
+  }, []);
+
+  useEffect(() => {
+    const orderTotal = state.items.reduce((sum, item) => {
+      return sum + item.price * item.quantity;
+    }, 0);
+    
+    setTotal(orderTotal);
   }, [state.items]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -57,7 +61,7 @@ const CheckoutPage: React.FC = () => {
     });
   };
 
-  const handlePayPalPayment = async (details: any) => {
+  const handleConfirmPayment = async () => {
     setLoading(true);
     try {
       const response = await fetch('/api/checkoutapi', {
@@ -66,16 +70,16 @@ const CheckoutPage: React.FC = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          orderID: details.orderID,
+          total,
           billingInfo,
         }),
       });
 
       const result = await response.json();
-      console.log('PayPal Payment Response:', result);
+      console.log('Payment Response:', result);
       alert('Payment successful. Thank you for your purchase!');
     } catch (error) {
-      console.error('PayPal payment error:', error);
+      console.error('Payment error:', error);
       alert('Error processing payment.');
     } finally {
       setLoading(false);
@@ -97,10 +101,10 @@ const CheckoutPage: React.FC = () => {
                   <img src={item.imageUrl || 'https://via.placeholder.com/50'} alt={item.name} className="w-10 h-10 object-cover" />
                   <div>
                     <h3 className="text-sm text-slate-400 font-medium">{item.name}</h3>
-                    <p className="text-sm text-gray-400">{item.quantity} x ${item.price.toFixed(2)}</p>
+                    <p className="text-sm text-gray-400">{item.quantity} x KSh {item.price.toFixed(2)}</p>
                   </div>
                 </div>
-                <p className="text-md text-green-700 font-semibold">${(item.price * item.quantity).toFixed(2)}</p>
+                <p className="text-md text-green-700 font-semibold">KSh {(item.price * item.quantity).toFixed(2)}</p>
               </div>
             ))}
           </div>
@@ -180,7 +184,7 @@ const CheckoutPage: React.FC = () => {
         </div>
       </div>
 
-      {/* PayPal Payment Modal */}
+      {/* Payment Confirmation Modal */}
       <Modal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
@@ -190,24 +194,10 @@ const CheckoutPage: React.FC = () => {
         <div className="flex flex-col items-center justify-center p-4 bg-white rounded-xl mt-32 shadow-lg w-11/12 md:w-1/3 mx-auto">
           <h2 id="payment-modal-title" className="text-xl font-bold text-indigo-600 my-16 text-center">Confirm Payment</h2>
           <p id="payment-modal-description" className="mt-2 text-center">You are about to pay KSh {total.toFixed(2)}. Proceed?</p>
-          <PayPalScriptProvider options={{ "client-id": "your-paypal-client-id" }}>
-            <PayPalButtons
-              createOrder={(data, actions) => {
-                return actions.order.create({
-                  purchase_units: [{
-                    amount: {
-                      value: total.toFixed(2),
-                    },
-                  }],
-                });
-              }}
-              onApprove={async (data, actions) => {
-                const details = await actions.order.capture();
-                handlePayPalPayment(details);
-              }}
-            />
-          </PayPalScriptProvider>
-          <Button onClick={() => setModalOpen(false)} color="secondary" className="mt-4">Cancel</Button>
+          <div className="flex space-x-4 mt-4">
+            <Button onClick={handleConfirmPayment} color="primary" className="bg-blue-600 text-white">Confirm</Button>
+            <Button onClick={() => setModalOpen(false)} color="secondary">Cancel</Button>
+          </div>
         </div>
       </Modal>
     </div>

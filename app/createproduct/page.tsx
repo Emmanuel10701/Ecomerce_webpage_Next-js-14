@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -157,10 +157,11 @@ const CreateProduct = () => {
         className="p-8 bg-white rounded-lg shadow-lg w-full max-w-4xl border border-gray-200"
         onSubmit={handleSubmit}
       >
-        <h1 className="text-3xl font-bold mb-6 text-gray-800">
+      
+        <h1 className="text-3xl my-10 text-center font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-purple-600">
           Create New Product
         </h1>
-
+    
         {error && <p className="text-red-600 mb-4">{error}</p>}
 
         <div className="flex flex-col md:flex-row md:space-x-4">
@@ -277,25 +278,25 @@ const CreateProduct = () => {
           </div>
         </div>
 
-        <div className="flex space-x-4 mt-6">
+        <div className="flex flex-wrap justify-between space-x-4 mt-6">
           <button
             type="button"
             onClick={() => router.back()}
-            className="py-3 px-6 bg-gray-500 text-white rounded-lg hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-black transition-opacity duration-300"
+            className="flex-1 mb-2 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-black transition-opacity duration-300"
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={() => router.push('/productstable')}
-            className="py-3 px-6 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-black transition-opacity duration-300"
+            className="flex-1 mb-2 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-black transition-opacity duration-300"
           >
-           Dashboard
+            Dashboard
           </button>
           <button
             type="submit"
             disabled={loading}
-            className="py-3 px-6 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-black transition-opacity duration-300"
+            className="flex-1 mb-2 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-black transition-opacity duration-300"
           >
             {loading ? 'Submitting...' : 'Submit'}
           </button>

@@ -106,8 +106,8 @@ const ProductPage: React.FC<{ params: { id: string } }> = ({ params }) => {
   return (
     <div className="container mx-auto p-4 mt-14 ">
       <div className="flex flex-col md:flex-row">
-        <div className="w-full md:w-2/4 flex flex-col items-center">
-          <div className="relative w-3/4 h-2/3 flex bg-indigo-100 justify-center mb-4">
+        <div className=" md:w-2/4 w-full flex flex-col items-center">
+          <div className="relative w-3/4 h-2/3 flex  justify-center mb-4">
             <Image
               src={product.image || '/images/default.avif'}
               alt={`Image of ${product.name}`}
@@ -124,15 +124,15 @@ const ProductPage: React.FC<{ params: { id: string } }> = ({ params }) => {
           </div>
           <div className="mt-4">
             <h2 className="text-xl font-bold text-indigo-400 mb-4">Related Products</h2>
-            <div className="flex space-x-4 overflow-x-auto">
+            <div className="flex space-x-4 overflow-x-auto flex-wrap">
               {relatedProducts.map((relatedProduct) => (
-                <div key={relatedProduct.id} className="w-1/4 min-w-[150px]  flex flex-col items-center">
+                <div key={relatedProduct.id} className="w-1/4 min-w-[120px]  flex flex-wrap items-center">
                   <Link href={`/Productslistpage/${relatedProduct.id}`}>
                     <Image
                       src={relatedProduct.image || '/images/default.avif'}
                       alt={`Image of ${relatedProduct.name}`}
-                      width={100}
-                      height={100}
+                      width={70}
+                      height={70}
                       className="rounded-lg mb-2 "
                     />
                     <h3 className="text-sm font-bold text-center text-indigo-600">{relatedProduct.name}</h3>
@@ -172,10 +172,10 @@ const ProductPage: React.FC<{ params: { id: string } }> = ({ params }) => {
                 <FaLinkedin size={24} />
               </Link>
             </div>
-          <p className="mb-4 text-md text-slate-500 font-bold">{fullDescription}</p>
+          <p className="mb-4 text-sm md:text-md  text-slate-500 font-semibold">{fullDescription}</p>
 
           <div className="flex space-x-2 justify-evenly items-center mt-10">
-            <button onClick={handleBackClick} className="flex items-center justify-center text-white bg-orange-600 rounded-lg px-4 flex-1 py-3">
+            <button onClick={handleBackClick} className="flex items-center justify-center text-white bg-orange-600 rounded-lg px-4 flex-1 py-2">
               {processing ? (
                 <>
                   <CircularProgress size={20} color="inherit" />
@@ -188,16 +188,16 @@ const ProductPage: React.FC<{ params: { id: string } }> = ({ params }) => {
 
             <button
               onClick={handleAddToCart}
-              className={`flex items-center justify-center py-3 px-4 flex-1 rounded-lg text-white transition-colors ${isInCart ? 'bg-blue-600' : 'bg-green-600'}`}
+              className={`flex items-center text-sm justify-center py-2 px-3 flex-1 rounded-lg text-white transition-colors ${isInCart ? 'bg-blue-600' : 'bg-green-600'}`}
             >
               {isInCart ? (
                 <>
-                  <FaCartArrowDown size={16} className="mr-2" />
-                  Remove from Cart
+                  <FaCartArrowDown size={16} className="mr-2 text-sm" />
+                  In cart
                 </>
               ) : (
                 <>
-                  <FaCartPlus size={16} className="mr-2" />
+                  <FaCartPlus size={16} className="mr-2 text-sm" />
                   Add to Cart
                 </>
               )}

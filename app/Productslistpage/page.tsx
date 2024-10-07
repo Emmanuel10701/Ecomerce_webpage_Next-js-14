@@ -10,7 +10,7 @@ import Card from '@/components/card/page'; // Adjust the path to Card component
 
 interface Product {
   id: string; // Use string for id to match Card component
-  title: string;
+  name: string;
   description: string;
   price: number;
   oldPrice?: number;
@@ -103,7 +103,7 @@ const HomePage: React.FC = () => {
     }
 
     if (searchTerm) {
-      result = result && (p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      result = result && (p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           p.description.toLowerCase().includes(searchTerm.toLowerCase()));
     }
 
@@ -154,7 +154,7 @@ const HomePage: React.FC = () => {
         <FaBars size={16} />
       </button>
 
-      <div className="md:flex md:flex-row items-start">
+      <div className="md:flex md:flex-row flex-col-reverse items-start">
         {/* Category List */}
         <div className="flex-none relative md:w-[22%] lg:w-2/5 bg-white p-4">
         <section className="py-6">
@@ -188,7 +188,7 @@ const HomePage: React.FC = () => {
         </div>
 
         {/* Carousel */}
-        <div className="relative h-[30vh] md:h-[58vh] lg:h-[67vh] mt-[80px] w-full md:w-[78%] lg:w-[80%]">
+        <div className="relative h-[43vh] md:h-[58vh] lg:h-[67vh] mt-[80px] w-full md:w-[78%] lg:w-[80%]">
           <div className="relative h-full group">
             <Image
               src={images[currentIndex].src}
@@ -236,7 +236,7 @@ const HomePage: React.FC = () => {
       {/* Search and Products */}
       <div className="flex flex-col p-4">
         {/* Search */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-4 md:mx-[25%] mx-3 w-2/3">
+        <div className="flex  w-10/12 gap-4 mb-4 md:mx-[25%] mx-3">
           <input
             type="text"
             value={searchTerm}
@@ -254,7 +254,7 @@ const HomePage: React.FC = () => {
         </div>
 
         {/* Products Grid */}
-        <div className="flex-grow">
+        <div className="flex">
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-10 p-2 mb-4">
             {isLoading ? (
               <div className="flex items-center justify-center w-full h-32">
@@ -267,7 +267,7 @@ const HomePage: React.FC = () => {
                 <Card
                   key={product.id}
                   id={product.id}
-                  name={product.title} // Match Card props
+                  name={product.name} // Match Card props
                   price={product.price}
                   oldPrice={product.oldPrice}
                   imageUrl={product.image}
@@ -276,9 +276,7 @@ const HomePage: React.FC = () => {
                 />
               ))
             ) : (
-              <div className="flex justify-center items-center w-full h-32">
-                <p className="text-center text-black text-lg">No such Product</p>
-              </div>
+                <p className="text-center text-slate-600  text-lg">No such Product</p>
             )}
           </div>
         </div>
