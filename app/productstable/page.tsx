@@ -220,7 +220,7 @@ Admin             </button>
                         <img src={product.image || DEFAULT_IMAGE} alt={product.name} className="w-14 h-14 object-cover rounded-lg" />
                       </td>
                       <td className="border border-gray-300 p-2">{product.name}</td>
-                      <td className="border border-gray-300 p-2">${product.price.toFixed(2)}</td>
+                      <td className="border border-gray-300 p-2">ksh{product.price.toFixed(2)}</td>
                       <td className="border border-gray-300 p-2">{product.quantity}</td>
                       <td className="border border-gray-300 p-2">
                         <StarRating rating={product.starRating} />

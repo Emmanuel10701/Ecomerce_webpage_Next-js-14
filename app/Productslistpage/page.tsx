@@ -158,37 +158,54 @@ const HomePage: React.FC = () => {
         {/* Category List */}
         <div className="flex-none relative md:w-[22%] lg:w-2/5 bg-white p-4">
         <section className="py-6">
-      <h2 className="text-xl font-bold mb-6 mt-2 text-slate-500">Categories</h2>
-      <div className="flex flex-col space-y-4">
-        {categories.map((category) => (
-          <button
-            key={category}
-            onClick={() => handleCategoryClick(category)}
-            className={`text-md font-semibold block w-full max-w-md mx-auto text-center p-3 rounded-full transition duration-300 ease-in-out ${
-              selectedCategory === category
-                ? 'bg-blue-600 text-white shadow-lg'
-                : 'bg-gray-200 text-slate-500 hover:bg-gray-300'
-            }`}
-          >
-            {category}
-          </button>
-        ))}
-        <button
-          onClick={() => handleCategoryClick(null)}
-          className={`text-md font-semibold block w-full max-w-md mx-auto text-center p-3 rounded-full transition duration-300 ease-in-out ${
-            selectedCategory === null
-              ? 'bg-blue-600 text-white shadow-lg'
-              : 'bg-gray-200 text-slate-500 hover:bg-gray-300'
-          }`}
-        >
-          All Categories
-        </button>
-      </div>
+        <h2 className="text-xl font-bold mb-6 mt-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-purple-500">
+  Categories
+</h2>
+<div className="flex flex-col w-2/3 mx-auto  space-y-4">
+  {categories.map((category) => (
+    <label key={category} className="flex items-center cursor-pointer">
+      <input
+        type="checkbox"
+        checked={selectedCategory === category}
+        onChange={() => handleCategoryClick(category)}
+        className="hidden"
+      />
+      <span
+        className={`flex items-center justify-center w-full max-w-md mx-auto p-3 rounded-full transition duration-300 ease-in-out ${
+          selectedCategory === category
+            ? 'bg-blue-600 text-white shadow-lg'
+            : 'bg-gray-200 text-slate-500 hover:bg-gray-300'
+        }`}
+      >
+        {category}
+      </span>
+    </label>
+  ))}
+  <label className="flex items-center cursor-pointer">
+    <input
+      type="checkbox"
+      checked={selectedCategory === null}
+      onChange={() => handleCategoryClick(null)}
+      className="hidden"
+    />
+    <span
+      className={`flex items-center justify-center w-full max-w-md mx-auto p-3 rounded-full transition duration-300 ease-in-out ${
+        selectedCategory === null
+          ? 'bg-blue-600 text-white shadow-lg'
+          : 'bg-gray-200 text-slate-500 hover:bg-gray-300'
+      }`}
+    >
+      All Categories
+    </span>
+  </label>
+</div>
+
+
     </section>
         </div>
 
         {/* Carousel */}
-        <div className="relative h-[43vh] md:h-[58vh] lg:h-[67vh] mt-[80px] w-full md:w-[78%] lg:w-[80%]">
+        <div className="relative h-[43vh] md:h-[58vh] lg:h-[67vh] mt-[80px] w-full md:w-[82%] lg:w-[80%]">
           <div className="relative h-full group">
             <Image
               src={images[currentIndex].src}
@@ -246,7 +263,7 @@ const HomePage: React.FC = () => {
           />
           <button
             onClick={handleSearch}
-            className="flex bg-gradient-to-r from-orange-500 via-red-500 to-red-400 py-2 px-4 rounded-lg items-center shadow-md hover:shadow-lg text-white transition-all duration-300"
+            className=" bg-gradient-to-r from-orange-500 via-red-500 to-red-400 py-2 hidden md:flex px-4 rounded-lg items-center shadow-md hover:shadow-lg text-white transition-all duration-300"
           >
             Search
             <FaSearch size={14} className="ml-2" />

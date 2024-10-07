@@ -147,9 +147,9 @@ const ProductPage: React.FC<{ params: { id: string } }> = ({ params }) => {
         <div className="w-full md:w-2/4 flex flex-col p-4">
           <h1 className="text-2xl font-bold text-indigo-600 mb-2">{product.name}</h1>
           <div className="flex items-center mb-4">
-            <span className="text-xl font-semibold mr-2">${product.price.toFixed(2)}</span>
+            <span className="text-xl font-semibold mr-2">ksh{product.price.toFixed(2)}</span>
             {product.oldPrice && (
-              <span className="text-sm text-gray-500 line-through">${product.oldPrice.toFixed(2)}</span>
+              <span className="text-sm text-gray-500 line-through">ksh{product.oldPrice.toFixed(2)}</span>
             )}
           </div>
           {product.ratings && (
