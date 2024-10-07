@@ -18,7 +18,7 @@ const LINKS: Link[] = [
   { name: 'Home', href: '/' },
   { name: 'About Us', href: '/about' },
   { name: 'Contact', href: '/contact' },
-  { name: 'Admin', href: '/analytics' },
+  { name: 'Admin', href: '/productstable' },
 ];
 
 const Navbar: React.FC<{ onSearch: (query: string) => void }> = ({ onSearch }) => {

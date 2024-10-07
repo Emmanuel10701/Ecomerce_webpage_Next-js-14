@@ -7,6 +7,8 @@ import 'react-toastify/dist/ReactToastify.css';
 import Pagination from '@/components/paginationP/page';
 import Sidebar from '@/components/sidebar/page';
 import { useSession } from 'next-auth/react';
+import { AiOutlineLogin } from "react-icons/ai"; // Modern icon for login
+
 import { useRouter } from 'next/navigation';
 import { FaSync } from 'react-icons/fa';
 import StarRating from '@/components/starRating/page';
@@ -126,16 +128,27 @@ const ListProducts: React.FC = () => {
 
   if (!session) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100">
-        <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-sm text-center">
-          <h2 className="text-2xl font-bold mb-4">Please Log In</h2>
-          <p className="mb-6">You need to log in or register to access this page.</p>
-          <button 
+      <div className="flex items-center  justify-center min-h-screen bg-gray-100">
+        <div className="bg-white  p-8 rounded-xl shadow-lg w-full max-w-sm text-center">
+        <h2 className="text-2xl font-bold mb-4 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+  Please Log In
+</h2>
+          <p className="mb-6 text-l font-semibold text-center">You need to log in or register to access this page.</p>
+          <div className='flex justify-center items-center'>
+            <div className='flex items-center'>
+            <button 
             onClick={() => router.push("/login")} 
-            className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition duration-300"
+            className="flex items-center justify-center bg-slate-200 hover:bg-slate-300 border focus:outline-emerald-300 text-slate-500 py-2 px-4 rounded-full  transition duration-300"
           >
-            Go to Login Page
+            <AiOutlineLogin className="mr-2" /> Go to Login Page
           </button>
+            </div>
+         
+
+
+     
+          </div>
+     
         </div>
       </div>
     );
@@ -146,14 +159,14 @@ const ListProducts: React.FC = () => {
       <div className="flex px-4 md:px-8 py-4">
         <div className="flex-1">
           <div className="mb-4 flex items-center justify-between">
-            {isAdmin && (
+  (
               <button
                 onClick={() => router.push('/createproduct')}
                 className="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600"
               >
                 Add Product
               </button>
-            )}
+            )
             <button
               onClick={() => {
                 setIsRefreshing(true);
@@ -167,9 +180,9 @@ const ListProducts: React.FC = () => {
             <button
               onClick={() => {router.push("analytics")
               }}
-              className="bg-green-500 flex  text-white py-2 px-4 rounded hover:bg-green-600"
+              className="bg-transparent rounded-full  flex border text-slate-600 py-2 px-6 shandow-md md:shandow-lg  hover:bg-slate-300"
             >
-Admin             </button>
+Admin           </button>
             <input
               type="text"
               value={searchTerm}
@@ -222,7 +235,7 @@ Admin             </button>
                       <td className="border border-gray-300 p-2">{product.name}</td>
                       <td className="border border-gray-300 p-2">ksh{product.price.toFixed(2)}</td>
                       <td className="border border-gray-300 p-2">{product.quantity}</td>
-                      <td className="border border-gray-300 p-2">
+                      <td className="border border-gray-300 p-2 text-yellow-600">
                         <StarRating rating={product.starRating} />
                       </td>
                       <td className="border border-gray-300 p-2">
