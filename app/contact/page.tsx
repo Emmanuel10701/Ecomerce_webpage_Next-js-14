@@ -22,13 +22,11 @@ const Contact: React.FC = () => {
   });
   const [loading, setLoading] = useState<boolean>(false);
 
-  // Handle form input changes
   const handleChange = (e: ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({ ...prevData, [name]: value }));
   };
 
-  // Handle form submission
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
@@ -44,7 +42,7 @@ const Contact: React.FC = () => {
 
       if (response.ok) {
         toast.success("Message sent successfully!");
-        setFormData({ name: "", email: "", message: "" }); // Clear form fields
+        setFormData({ name: "", email: "", message: "" });
       } else {
         toast.error("An error occurred, please try again.");
       }
@@ -70,7 +68,20 @@ const Contact: React.FC = () => {
         Get In Touch
       </motion.h1>
 
-      <div className="flex flex-col md:flex-row px-8 gap-8">
+      {/* Flex container for image and contact information */}
+      <div className="flex md:w-1/2 w-full flex-col md:flex-row mx-auto items-center md:justify-between px-8 gap-8">
+        <motion.img
+          src="/images/girl.png" // Replace with your image URL
+          alt="Contact Us"
+          className="w-full max-w-xs rounded-lg shadow-lg"
+          variants={{
+            hidden: { opacity: 0, y: 20 },
+            visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+          }}
+          initial="hidden"
+          animate="visible"
+        />
+
         <motion.div
           className="flex flex-col flex-1 md:pl-20"
           variants={{
@@ -84,7 +95,7 @@ const Contact: React.FC = () => {
             We're Here to Help
           </h1>
           <p className="text-sm text-slate-500 mb-5">
-            Have questions about our products, need help with an order, or want to provide feedback? Our team is here to assist you. 
+            Have questions about our products, need help with an order, or want to provide feedback? Our team is here to assist you.
           </p>
           <div className="flex items-start mt-6">
             <MdMarkEmailRead className="text-green-500 text-xl" />
@@ -99,68 +110,69 @@ const Contact: React.FC = () => {
             <h2 className="text-sm font-bold ml-2">123 E-Commerce St, Shop City, EC 12345</h2>
           </div>
         </motion.div>
-
-        <motion.div
-          className="flex flex-col flex-1 mt-10 md:mt-0"
-          variants={{
-            hidden: { opacity: 0, y: 20 },
-            visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
-          }}
-          initial="hidden"
-          animate="visible"
-        >
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="flex flex-col mt-3 w-full max-w-md mx-auto">
-              <label htmlFor="name" className="mb-1 text-sm font-semibold">Your Name</label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                className="bg-slate-100 p-3 text-sm rounded-md"
-                placeholder="Your Name"
-                required
-              />
-            </div>
-            <div className="flex flex-col mt-3 w-full max-w-md mx-auto">
-              <label htmlFor="email" className="mb-1 text-sm font-semibold">Your Email</label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className="bg-slate-100 p-3 text-sm rounded-md"
-                placeholder="Your Email"
-                required
-              />
-            </div>
-            <div className="flex flex-col mt-3 w-full max-w-md mx-auto">
-              <label htmlFor="message" className="mb-1 text-sm font-semibold">Your Message</label>
-              <textarea
-                id="message"
-                name="message"
-                value={formData.message}
-                onChange={handleChange}
-                className="bg-slate-100 resize-none text-sm rounded-md p-3"
-                placeholder="Enter your message here"
-                rows={4}
-                required
-              />
-            </div>
-            <div className="flex justify-center mt-6">
-              <button
-                type="submit"
-                className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-md"
-                disabled={loading}
-              >
-                {loading ? "Submitting..." : "Submit"}
-              </button>
-            </div>
-          </form>
-        </motion.div>
       </div>
+
+      {/* Contact form */}
+      <motion.div
+        className="flex flex-col flex-1 mt-10 md:mt-0"
+        variants={{
+          hidden: { opacity: 0, y: 20 },
+          visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+        }}
+        initial="hidden"
+        animate="visible"
+      >
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="flex flex-col mt-3 w-full max-w-md mx-auto">
+            <label htmlFor="name" className="mb-1 text-sm font-semibold">Your Name</label>
+            <input
+              type="text"
+              id="name"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              className="bg-slate-100 p-3 text-sm rounded-md"
+              placeholder="Your Name"
+              required
+            />
+          </div>
+          <div className="flex flex-col mt-3 w-full max-w-md mx-auto">
+            <label htmlFor="email" className="mb-1 text-sm font-semibold">Your Email</label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              className="bg-slate-100 p-3 text-sm rounded-md"
+              placeholder="Your Email"
+              required
+            />
+          </div>
+          <div className="flex flex-col mt-3 w-full max-w-md mx-auto">
+            <label htmlFor="message" className="mb-1 text-sm font-semibold">Your Message</label>
+            <textarea
+              id="message"
+              name="message"
+              value={formData.message}
+              onChange={handleChange}
+              className="bg-slate-100 resize-none text-sm rounded-md p-3"
+              placeholder="Enter your message here"
+              rows={4}
+              required
+            />
+          </div>
+          <div className="flex justify-center mt-6">
+            <button
+              type="submit"
+              className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-md"
+              disabled={loading}
+            >
+              {loading ? "Submitting..." : "Submit"}
+            </button>
+          </div>
+        </form>
+      </motion.div>
 
       <ToastContainer
         position="top-right"
