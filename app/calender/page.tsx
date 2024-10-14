@@ -8,7 +8,7 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { Dialog, Button, IconButton, CircularProgress, Drawer, Badge } from '@mui/material';
 import { AiOutlineClose, AiOutlineBell } from 'react-icons/ai';
-import Sidebar from '@/components/sidebar/page';
+import Sidebar from '../../components/sidebar/page';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 

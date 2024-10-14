@@ -4,8 +4,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import LoadingSpinner from '@/components/spinner/page'; // Make sure this is the correct path
-import Sidebar from '@/components/sidebar/page'; // Make sure this is the correct path
+import LoadingSpinner from '../../components/spinner/page'; // Make sure this is the correct path
+import Sidebar from '../../components/sidebar/page'; // Make sure this is the correct path
 import { FaSync, FaEnvelope, FaFilePdf, FaEllipsisV } from 'react-icons/fa';
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';

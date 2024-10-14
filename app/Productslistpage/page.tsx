@@ -5,8 +5,8 @@ import { FaBars, FaTimes, FaSearch } from 'react-icons/fa';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import Image from 'next/image';
 import { CircularProgress } from '@mui/material';
-import Sidebar from '@/components/Psidebar/page'; // Adjust the path as necessary
-import Card from '@/components/card/page'; // Adjust the path to Card component
+import Sidebar from '../../components/Psidebar/page'; // Adjust the path as necessary
+import Card from '../../components/card/page'; // Adjust the path to Card component
 
 interface Product {
   id: string; // Use string for id to match Card component

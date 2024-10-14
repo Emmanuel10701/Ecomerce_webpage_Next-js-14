@@ -4,14 +4,14 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import Pagination from '@/components/paginationP/page';
-import Sidebar from '@/components/sidebar/page';
+import Pagination from '../../components/paginationP/page';
+import Sidebar from '../../components/sidebar/page';
 import { useSession } from 'next-auth/react';
 import { AiOutlineLogin } from "react-icons/ai"; // Modern icon for login
 
 import { useRouter } from 'next/navigation';
 import { FaSync } from 'react-icons/fa';
-import StarRating from '@/components/starRating/page';
+import StarRating from '../../components/starRating/page';
 import CircularProgress from '@mui/material/CircularProgress';
 
 interface Product {
@@ -159,14 +159,14 @@ const ListProducts: React.FC = () => {
       <div className="flex px-4 md:px-8 py-4">
         <div className="flex-1">
           <div className="mb-4 flex items-center justify-between">
-  (
+  
               <button
                 onClick={() => router.push('/createproduct')}
                 className="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600"
               >
                 Add Product
               </button>
-            )
+            
             <button
               onClick={() => {
                 setIsRefreshing(true);

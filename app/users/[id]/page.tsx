@@ -3,8 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { FaArrowLeft } from 'react-icons/fa';
 import { useSession } from 'next-auth/react';
-import Sidebar from '@/components/sidebar/page'; // Ensure the correct path
-import LoadingSpinner from '@/components/spinner/page';
+import Sidebar from '../../../components/sidebar/page'; // Ensure the correct path
+import LoadingSpinner from '../../../components/spinner/page';
 
 // Define the User type
 interface User {

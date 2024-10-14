@@ -5,8 +5,8 @@ import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useSession } from 'next-auth/react';
-import LoadingSpinner from '@/components/spinner/page'; 
-import Sidebar from '@/components/sidebar/page'; // Import Sidebar
+import LoadingSpinner from '../../components/spinner/page'; 
+import Sidebar from '../../components/sidebar/page'; // Import Sidebar
 import moment from 'moment';
 import { FaSync, FaFilePdf, FaEllipsisV } from 'react-icons/fa'; // Import additional icons
 import { useRouter } from 'next/navigation';

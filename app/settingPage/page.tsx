@@ -11,13 +11,6 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import Button from '@mui/material/Button';
 import { useRouter } from 'next/navigation';
-import {
-    fetchUsers,
-    addAdmin,
-    addEmployee,
-    removeEmployee,
-    removeAdmin
-} from '@/libs/api'; // Ensure the path is correct
 
 interface User {
     id: string;
@@ -41,9 +34,69 @@ const UserManagement: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 5;
-    const router = useRouter(); 
- const [isProcessing, setIsProcessing] = useState(false); // Add this state
+    const router = useRouter();
+    const [isProcessing, setIsProcessing] = useState(false); // Add this state
 
+    // Fetch all users
+    const fetchUsers = async () => {
+        const response = await fetch('/api/register');
+        if (!response.ok) {
+            throw new Error('Failed to fetch users');
+        }
+        return response.json();
+    };
+
+    // Add Admin
+    const addAdmin = async (userId: string, name: string) => {
+        const response = await fetch('/api/admin', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ userId, name }),
+        });
+        if (!response.ok) {
+            throw new Error('Failed to add admin');
+        }
+        return response.json();
+    };
+
+    // Add Employee
+    const addEmployee = async (userId: string) => {
+        const response = await fetch('/api/employee', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ userId }),
+        });
+        if (!response.ok) {
+            throw new Error('Failed to add employee');
+        }
+        return response.json();
+    };
+
+    // Remove Employee
+    const removeEmployee = async (userId: string) => {
+        const response = await fetch(`/api/employee/${userId}`, {
+            method: 'DELETE',
+        });
+        if (!response.ok) {
+            throw new Error('Failed to remove employee');
+        }
+        return response.json();
+    };
+
+    // Remove Admin
+    const removeAdmin = async (userId: string) => {
+        const response = await fetch(`/api/admin/${userId}`, {
+            method: 'DELETE',
+        });
+        if (!response.ok) {
+            throw new Error('Failed to remove admin');
+        }
+        return response.json();
+    };
 
     useEffect(() => {
         const fetchData = async () => {
@@ -88,6 +141,7 @@ const UserManagement: React.FC = () => {
         }
 
         try {
+            setIsProcessing(true); // Start processing
             const userRole = selectedUser.role;
 
             if (actionType === 'addAdmin' && userRole === 'ADMIN') {
@@ -100,7 +154,7 @@ const UserManagement: React.FC = () => {
             }
 
             if (actionType === 'addAdmin') {
-                await addAdmin(selectedUser.id);
+                await addAdmin(selectedUser.id, selectedUser.name);
                 toast.success('User added as admin successfully.');
             } else if (actionType === 'addEmployee') {
                 await addEmployee(selectedUser.id);
@@ -124,21 +178,8 @@ const UserManagement: React.FC = () => {
         } catch (error) {
             console.error('Error performing action', error);
             toast.error('Failed to perform action.');
-        }
-    };
-
-    const handleEditEmployee = (employee: User) => {
-        console.log('Edit employee', employee);
-    };
-
-    const handleDeleteEmployee = async (id: string) => {
-        try {
-            await removeEmployee(id);
-            setEmployees(employees.filter(employee => employee.id !== id));
-            toast.success('Employee deleted successfully.');
-        } catch (error) {
-            console.error('Error deleting employee', error);
-            toast.error('Failed to delete employee.');
+        } finally {
+            setIsProcessing(false); // End processing
         }
     };
 
@@ -170,21 +211,21 @@ const UserManagement: React.FC = () => {
 
     if (!session) {
         return (
-          <div className="flex items-center justify-center min-h-screen bg-gray-100">
-            <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-sm text-center">
-              <h2 className="text-2xl font-bold mb-4">Please Log In</h2>
-              <p className="mb-6">You need to log in or register to access this page.</p>
-              <button 
-                onClick={handleLogin} 
-                className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition duration-300"
-                disabled={isProcessing} // Disable button while processing
-              >
-                {isProcessing ? 'Processing...' : 'Go to Login Page'}
-              </button>
+            <div className="flex items-center justify-center min-h-screen bg-gray-100">
+                <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-sm text-center">
+                    <h2 className="text-2xl font-bold mb-4">Please Log In</h2>
+                    <p className="mb-6">You need to log in or register to access this page.</p>
+                    <button
+                        onClick={handleLogin}
+                        className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition duration-300"
+                        disabled={isProcessing} // Disable button while processing
+                    >
+                        {isProcessing ? 'Processing...' : 'Go to Login Page'}
+                    </button>
+                </div>
             </div>
-          </div>
         );
-      }
+    }
 
     if (showAccessDeniedModal) {
         return (
@@ -243,120 +284,72 @@ const UserManagement: React.FC = () => {
                     </button>
                 </div>
 
-                <div className="lg:flex lg:space-x-6 mb-8">
-                    <div className="lg:w-1/3">
-                        <div className="mb-4">
-                            <select
-                                className="m rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 text-slate-600 font-bold "
-                                value={actionType}
-                                onChange={(e) => setActionType(e.target.value as 'addAdmin' | 'addEmployee' | 'removeAdmin' | 'removeEmployee')}
-                            >
-                                <option value="addAdmin">Add as Admin</option>
-                                <option value="addEmployee">Add as Employee</option>
-                                <option value="removeAdmin">Remove Admin</option>
-                                <option value="removeEmployee">Remove Employee</option>
-                            </select>
-                        </div>
-                        <div className="mb-4">
-                            <input
-                                type="text"
-                                placeholder="Search Users"
-                                className="bg-gray-50 border border-gray-300 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                            />
-                        </div>
-                        <div className="bg-white p-4 rounded-lg shadow-md">
-                            <h3 className="text-xl font-semibold mb-4 ">
-                                Select User
-                            </h3>
-                            <select
-                                className=" border border-gray-300 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 text-slate-600 font-bold "
-                                value={selectedUser ? selectedUser.id : ''}
-                                onChange={(e) => {
-                                    const user = users.find(user => user.id === e.target.value);
-                                    setSelectedUser(user || null);
-                                }}
-                            >
-                                <option value="" disabled>Select a user</option>
-                                {users.map(user => (
-                                    <option key={user.id} value={user.id} className="flex items-center space-x-2">
-                                        {user.name} ({user.email})
-                                        {user.role === 'ADMIN' && <FaCheckCircle className="text-green-500 ml-2" />}
-                                        {user.role === 'STAFF' && <FaCheckCircle className="text-blue-500 ml-2" />}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                        <button
-                            className="mt-4 bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition duration-300"
-                            onClick={() => setShowActionModal(true)}
-                        >
-                            {actionType === 'addAdmin' || actionType === 'addEmployee' ? 'Add User' : 'Remove User'}
-                        </button>
-                    </div>
-                    <div className="lg:w-2/3">
-                        <h2 className="text-2xl font-bold mb-4 bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 text-transparent bg-clip-text">
-                            {currentTab === 'employees' ? 'Employees' : 'Admins'}
-                        </h2>
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full bg-white border border-gray-200">
-                                <thead className="bg-gray-100">
-                                    <tr>
-                                        <th className="py-2 px-4 border-b">Name</th>
-                                        <th className="py-2 px-4 border-b">Email</th>
-                                        <th className="py-2 px-4 border-b">Role</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {dataToDisplay.map(user => (
-                                        <tr key={user.id}>
-                                            <td className="py-2 px-4 border-b">{user.name}</td>
-                                            <td className="py-2 px-4 border-b">{user.email}</td>
-                                            <td className="py-2 px-4 border-b">{user.role}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                            <div className="mt-4 flex justify-between items-center">
-                                <button
-                                    className={`py-2 px-4 rounded transition duration-300 ${currentPage === 1 ? 'bg-gray-300 text-gray-700 cursor-not-allowed' : 'bg-gray-700 text-white hover:bg-gray-600'}`}
-                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                                    disabled={currentPage === 1}
-                                >
-                                    Previous
-                                </button>
-                                <span>Page {currentPage} of {Math.ceil(filteredData.length / itemsPerPage)}</span>
-                                <button
-                                    className={`py-2 px-4 rounded transition duration-300 ${currentPage === Math.ceil(filteredData.length / itemsPerPage) ? 'bg-gray-300 text-gray-700 cursor-not-allowed' : 'bg-gray-700 text-white hover:bg-gray-600'}`}
-                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(filteredData.length / itemsPerPage)))}
-                                    disabled={currentPage === Math.ceil(filteredData.length / itemsPerPage)}
-                                >
-                                    Next
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                <div className="flex justify-between mb-4">
+                    <input
+                        type="text"
+                        placeholder="Search by name or email"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="border rounded py-2 px-3 w-full max-w-xs"
+                    />
+                    <button
+                        onClick={() => setShowActionModal(true)}
+                        className="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600 transition duration-300 ml-2"
+                    >
+                        {currentTab === 'employees' ? 'Add Employee' : 'Add Admin'}
+                    </button>
                 </div>
+
+                <div className="overflow-hidden rounded-lg border border-gray-200 shadow">
+                    <table className="min-w-full divide-y divide-gray-200">
+                        <thead>
+                            <tr>
+                                <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                                <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                            {dataToDisplay.map(user => (
+                                <tr key={user.id} onClick={() => setSelectedUser(user)} className="cursor-pointer hover:bg-gray-100">
+                                    <td className="px-6 py-4 whitespace-nowrap">{user.name}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap">{user.email}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap">{user.role}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <button
+                                            onClick={() => {
+                                                setSelectedUser(user);
+                                                setActionType(user.role === 'ADMIN' ? 'removeAdmin' : 'removeEmployee');
+                                                setShowActionModal(true);
+                                            }}
+                                            className="text-red-600 hover:text-red-800"
+                                        >
+                                            Remove
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+
+                <ToastContainer />
+                <Dialog open={showActionModal} onClose={closeActionModal}>
+                    <DialogTitle>{actionType === 'addAdmin' ? 'Add Admin' : 'Remove User'}</DialogTitle>
+                    <DialogContent>
+                        <p>Are you sure you want to {actionType === 'addAdmin' ? 'add' : 'remove'} {selectedUser?.name}?</p>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={closeActionModal} color="primary">Cancel</Button>
+                        <Button onClick={handleAction} color="primary" disabled={isProcessing}>
+                            {isProcessing ? 'Processing...' : 'Confirm'}
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+
+                {/* Pagination and other functionalities can be added here */}
             </div>
-
-            {/* Action Modal */}
-            <Dialog open={showActionModal} onClose={closeActionModal}>
-                <DialogTitle>{actionType.includes('add') ? 'Add User' : 'Remove User'}</DialogTitle>
-                <DialogContent>
-                    <p className="text-slate-600 text-center font-semibold">Are you sure you want to {actionType.replace(/([A-Z])/g, ' $1').toLowerCase()} {selectedUser?.name}?</p>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={closeActionModal} color="primary" className="bg-blue-600 rounded-lg">
-                        Cancel
-                    </Button>
-                    <Button onClick={handleAction} color="secondary" className=" bg-blue-600 rounded-lg">
-                        Confirm
-                    </Button>
-                </DialogActions>
-            </Dialog>
-
-            <ToastContainer />
         </div>
     );
 };

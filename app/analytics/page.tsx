@@ -6,11 +6,11 @@ import { FaDollarSign, FaChartLine, FaBriefcase, FaPercent } from 'react-icons/f
 import { AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { BarChart, Bar } from 'recharts';
 import { useSession } from 'next-auth/react';
-import Sidebar from '@/components/sidebar/page'; // Ensure the correct path
-import LoadingSpinner from '@/components/spinner/page'; // Import the spinner component
+import Sidebar from '../../components/sidebar/page'; // Ensure the correct path
+import LoadingSpinner from '../../components/spinner/page'; // Import the spinner component
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
-import ChartGridComponent from '@/components/chartgrid2/page'; // Import the ChartGridComponent
+import ChartGridComponent from '../../components/chartgrid2/page'; // Import the ChartGridComponent
 import { TDocumentDefinitions } from 'pdfmake/interfaces'; // Import the TDocumentDefinitions type
 
 // Define data types
