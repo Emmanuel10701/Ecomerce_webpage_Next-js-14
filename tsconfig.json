@@ -21,11 +21,12 @@
         "name": "next"
       }
     ],
-    "paths": {
-      "@/*": [
-        "./*"
-      ]
-    }
+   "paths": {
+  "@/libs/*": [
+    "./libs/*"
+  ]
+}
+
   },
   "include": [
     "next-env.d.ts",
